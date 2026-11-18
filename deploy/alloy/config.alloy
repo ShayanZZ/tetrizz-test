@@ -1,0 +1,46 @@
+// Ships the logs of this stack's containers to Loki. Only containers of the compose project "tetrizz".
+// The Docker socket is how Alloy finds the containers and reads their logs.
+
+discovery.docker "stack" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=tetrizz"]
+  }
+}
+
+discovery.relabel "stack" {
+  targets = discovery.docker.stack.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "stack" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.stack.targets
+  relabel_rules = discovery.relabel.stack.rules
+  labels        = { "source" = "docker" }
+  forward_to    = [loki.process.privacy.receiver]
+}
+
+// The room server never logs addresses and Caddy keeps no access log, but Caddy's own error lines can
+// carry a visitor's address. Replace IPv4 addresses before anything is stored.
+loki.process "privacy" {
+  stage.replace {
+    expression = "(\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b)"
+    replace    = "<ip>"
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

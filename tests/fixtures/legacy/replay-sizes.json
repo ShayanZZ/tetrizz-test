@@ -1,0 +1,18 @@
+[
+ {
+  "file": "replay-0-BATTLE.tzzreplay",
+  "durationMs": 42848,
+  "rounds": 1,
+  "gzipBytes": 13856,
+  "jsonBytes": 135186,
+  "multi": 1
+ },
+ {
+  "file": "replay-1-SPRINT.tzzreplay",
+  "durationMs": 32320,
+  "rounds": 1,
+  "gzipBytes": 7949,
+  "jsonBytes": 73106,
+  "multi": 0
+ }
+]

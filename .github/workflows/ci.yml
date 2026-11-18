@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # The database contract tests (tests/server/db-contract.test.ts) also run against a real
+    # PostgreSQL; without TEST_POSTGRES_URL they run on SQLite only.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: tetrizz
+          POSTGRES_PASSWORD: tetrizz
+          POSTGRES_DB: tetrizz_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tetrizz -d tetrizz_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      TEST_POSTGRES_URL: postgres://tetrizz:tetrizz@127.0.0.1:5432/tetrizz_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build:all
+      - uses: actions/upload-artifact@v7
+        with:
+          name: builds
+          path: |
+            apps/web/dist
+            apps/web/dist-single/TetriZZ.html
+
+  regression:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: builds
+          path: builds
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tests/harness/requirements.txt
+      - run: pip install -r tests/harness/requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      # The multi-file build is made of ES modules, which browsers do not load from file://, so the
+      # harness serves the directory over HTTP on a loopback port.
+      - name: Behaviour and data checks, multi-file build
+        run: |
+          for part in fixtures solo vs; do python tests/harness/verify.py builds/dist --part $part; done
+      - name: Network settings are read from config.json, nothing is downloaded unconfigured
+        run: python tests/harness/check_network_config.py builds/dist
+      - name: Relay handshake, old and new peers (fake broker, two pages)
+        run: python tests/harness/check_relay_handshake.py builds/dist
+      - name: Relay room from lobby to match (fake broker, two pages)
+        run: python tests/harness/check_relay_room.py builds/dist
+      - name: Relay room leave, kick and host hand-over (fake broker, two pages)
+        run: python tests/harness/check_relay_leave.py builds/dist
+      - name: Relay join refusals - unknown room, password, no broker, no library (fake broker)
+        run: python tests/harness/check_relay_join_errors.py builds/dist
+      - name: Backend order, Options pick and Supabase room channel (fake Supabase client, fake broker)
+        run: python tests/harness/check_backend_pick.py builds/dist
+      - name: Keyboard, touch, practice and replay playback smoke test
+        run: python tests/harness/check_ui_smoke.py builds/dist-single/TetriZZ.html
+      - name: Behaviour and data checks, single-file build
+        run: |
+          for part in fixtures solo vs; do python tests/harness/verify.py builds/dist-single/TetriZZ.html --part $part; done
+      # The screenshot goldens depend on the exact Chromium build and system fonts, so a
+      # different runner image can differ without the game having changed.
+      - name: Screenshot comparison (informational)
+        continue-on-error: true
+        run: python tests/harness/verify.py builds/dist-single/TetriZZ.html --part screens
+
+  # The VPS stack. The first job checks the files with the vendors' own validators (the versions the
+  # stack pins); the second builds the images and runs the stack for real, backs it up and restores it.
+  deploy-files:
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      CADDY_VERSION: "2.11.7"
+      PROMETHEUS_VERSION: "3.13.5"
+      LOKI_VERSION: "3.7.9"
+      ALLOY_VERSION: "1.21.2"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml==6.0.3
+      - name: Fetch the validators
+        run: |
+          mkdir -p "$HOME/tools" && cd "$HOME/tools"
+          curl -fsSL "https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_linux_amd64.tar.gz" | tar xz caddy
+          curl -fsSL "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz" | tar xz --strip-components=1 "prometheus-${PROMETHEUS_VERSION}.linux-amd64/promtool"
+          curl -fsSL -o loki.zip "https://github.com/grafana/loki/releases/download/v${LOKI_VERSION}/loki-linux-amd64.zip" && unzip -q loki.zip && rm loki.zip
+          curl -fsSL -o alloy.zip "https://github.com/grafana/alloy/releases/download/v${ALLOY_VERSION}/alloy-linux-amd64.zip" && unzip -q alloy.zip && rm alloy.zip
+          chmod +x caddy promtool loki-linux-amd64 alloy-linux-amd64
+          echo "$HOME/tools" >> "$GITHUB_PATH"
+      - run: python tests/harness/check_deploy.py
+      # The front door with the real parts: Caddy (fetched above), the built server and the built
+      # page, which a browser opens through Caddy and makes a room on.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build && npm run build -w @tetrizz/server
+      - run: pip install -r tests/harness/requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Front door - real Caddy, built server, built page
+        run: python tests/harness/check_front_door.py apps/web/dist apps/server/dist/index.js
+
+  deploy-stack:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [lite, postgres, monitoring]
+    steps:
+      - uses: actions/checkout@v7
+      - run: tests/harness/check_stack.sh ${{ matrix.variant }}

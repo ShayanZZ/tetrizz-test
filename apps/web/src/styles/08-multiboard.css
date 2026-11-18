@@ -1,0 +1,73 @@
+body.vsplay .score-panel .duo {
+  gap: calc(var(--u) * 0.5);
+}
+.mini {
+  min-width: 0;
+  overflow: hidden;
+}
+.mini .v {
+  font:
+    600 min(calc(var(--u) * 0.85), 30px)/1.1 "Chakra Petch",
+    sans-serif;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  height: min(calc(var(--u) * 0.85), 30px);
+}
+.mini .k {
+  font-size: min(calc(var(--u) * 0.32), 10px);
+  letter-spacing: 0.18em;
+  color: var(--mut2);
+  margin-top: calc(var(--u) * 0.1);
+}
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--u) * 0.16);
+  text-align: center;
+}
+.trio > div {
+  min-width: 0;
+  overflow: hidden;
+}
+.trio .v {
+  font:
+    600 min(calc(var(--u) * 0.55), 18px)/1 "Chakra Petch",
+    sans-serif;
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  height: min(calc(var(--u) * 0.55), 18px);
+  transform: translateY(+1px);
+}
+.trio .v,
+.duo .v,
+.mini .v,
+.score,
+#botScore {
+  font-variant-numeric: tabular-nums;
+}
+.trio .k {
+  font-size: min(calc(var(--u) * 0.32), 10px);
+  letter-spacing: 0.08em;
+  color: var(--mut2);
+  margin-top: calc(var(--u) * 0.1);
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.trio-panel {
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 0.22);
+}
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--boardH);
+  align-self: center;
+  transition:
+    opacity 0.28s ease,
+    visibility 0s;
+}

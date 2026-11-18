@@ -1,0 +1,214 @@
+.practice-panel {
+  display: none;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.22);
+  flex: 0 0 auto;
+}
+body.practice .practice-panel {
+  display: flex;
+}
+.practice-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--u) * 0.22);
+}
+.practice-btn {
+  width: 100%;
+  min-width: 0;
+  height: clamp(28px, 4vh, 42px);
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--tbtn-bg);
+  color: var(--txt);
+  font:
+    700 clamp(7px, 2.3vw, 12px)/1 "Chakra Petch",
+    sans-serif;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: none;
+  transition: 0.12s;
+  padding: 0 2px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.practice-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.practice-btn.active {
+  border-color: var(--acchi);
+  color: var(--acchi);
+  box-shadow: 0 0 0 1px var(--acchi);
+}
+.practice-tools-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--u) * 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px) scaleY(0.85);
+  transform-origin: top center;
+  pointer-events: none;
+  transition: 0.2s;
+}
+body.practice.editing .practice-tools-inner {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+}
+body.editing #touch {
+  display: none;
+}
+.start-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 min(1.8vh, 14px);
+}
+body.practice {
+  --buMax: 90px;
+  --bExtra: calc(var(--hdrH) + var(--u) * 3 + 24px);
+  --bMargin: 28px;
+  --bu: min(
+    var(--buMax),
+    calc((var(--dvh, 100vh) - var(--hdrH) - var(--bExtra)) / (var(--vis) + 3)),
+    calc(
+      (100vw - var(--u) * var(--sideU) * 2 - var(--u) * var(--gapU) * 2 - var(--bMargin)) /
+        var(--cols)
+    )
+  );
+}
+@media (pointer: coarse) {
+  body {
+    --btnH: min(calc(25vw - 8px), clamp(44px, calc(var(--dvh, 100vh) * 0.09), 62px));
+    --barH: calc(var(--btnH) * 2 + 30px + env(safe-area-inset-bottom, 0px));
+    --u: max(
+      0px,
+      min(
+        37px,
+        min(
+          calc((var(--dvh, 100vh) - 18px - var(--barH)) / var(--vdiv)),
+          calc((100vw - 16px) / 17.8)
+        )
+      )
+    );
+    --uMenu: max(
+      0px,
+      min(37px, min(calc((var(--dvh, 100vh) - 18px) / 24.3), calc((100vw - 16px) / 17.8)))
+    );
+    --side: calc(var(--u) * 3.2);
+  }
+  body {
+    overflow: hidden;
+    touch-action: none;
+  }
+  body.playing #touch {
+    display: grid;
+  }
+  body.playing.noTouchBar:not(.vsplay) #touch {
+    display: none;
+  }
+  body.noTouchBar:not(.vsplay) main {
+    padding-top: calc(var(--hdrH) + 4px);
+  }
+  main {
+    padding: calc(var(--hdrH) + var(--u) * 3 + 4px) 8px calc(var(--barH) + 12px);
+    align-content: center;
+  }
+  .col-left {
+    overflow: visible;
+    gap: 0;
+  }
+  .col-left > .panel:first-child {
+    order: 1;
+    margin-bottom: calc(var(--u) * 0.32);
+  }
+  .col-left > .spacer {
+    order: 2;
+  }
+  .col-left > .actionWrap {
+    order: 3;
+    height: 0;
+    margin-bottom: 0;
+  }
+  .col-left > .actionWrap.has-action {
+    height: calc(var(--u) * 1.5);
+    margin-bottom: calc(var(--u) * 0.32);
+  }
+  .col-left > .chips {
+    order: 4;
+    height: auto;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+  .col-left > .chips:has(.show) {
+    margin-bottom: calc(var(--u) * 0.32);
+  }
+  .col-left > .score-panel {
+    order: 5;
+    margin-bottom: calc(var(--u) * 0.32);
+  }
+  .col-left > .trio-panel {
+    order: 6;
+    padding: calc(var(--u) * 0.24) calc(var(--u) * 0.3);
+  }
+  .col-left > .trio-panel .trio {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: calc(var(--u) * 0.16);
+    text-align: left;
+  }
+  .col-left > .trio-panel .trio > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .col-left > .trio-panel .trio .v {
+    order: 2;
+    font-size: min(calc(var(--u) * 0.55), 15px);
+    height: min(calc(var(--u) * 0.55), 15px);
+  }
+  .col-left > .trio-panel .trio .k {
+    order: 1;
+    margin-top: 0;
+    font-size: min(calc(var(--u) * 0.3), 9px);
+    letter-spacing: 0.12em;
+  }
+  .ctrl-tab.touch-only {
+    display: inline-flex;
+  }
+  .ctrl-page.touch-only.active {
+    display: flex;
+  }
+  body.practice main {
+    padding-top: calc(var(--hdrH) + var(--bu) * 3 + 4px);
+  }
+  body.practice {
+    --buMax: 46px;
+    --bExtra: calc(var(--hdrH) + var(--u) * 3 + var(--barH) + 4px);
+    --bMargin: 16px;
+  }
+}
+body.wide {
+  --u: max(
+    0px,
+    min(37px, min(calc((var(--dvh, 100vh) - 36px) / var(--vdiv)), calc((100vw - 28px) / 15.4)))
+  );
+}
+@media (pointer: coarse) {
+  body.wide {
+    --side: calc(var(--u) * 4);
+    --u: max(
+      0px,
+      min(
+        37px,
+        min(
+          calc((var(--dvh, 100vh) - 18px - var(--barH)) / var(--vdiv)),
+          calc((100vw - 16px) / 13.4)
+        )
+      )
+    );
+  }
+}

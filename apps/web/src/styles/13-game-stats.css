@@ -1,0 +1,72 @@
+.final-score {
+  font:
+    700 min(8vh, 13vw, 64px)/1 "Chakra Petch",
+    sans-serif;
+  text-shadow: 0 0 30px rgba(var(--acchi-rgb), 0.35);
+  text-align: center;
+}
+.gstats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: min(1.2vh, 9px);
+  width: min(700px, 100%);
+  padding: min(1.6vh, 14px);
+  border: 1px solid var(--line-strong);
+  border-radius: min(2vh, 16px);
+  background: var(--chip-bg);
+}
+.gs {
+  border: 1px solid var(--line);
+  border-radius: min(1.8vh, 14px);
+  padding: min(2.2vh, 18px) min(1vw, 8px);
+  background: var(--panel-g);
+}
+.gs .v {
+  font:
+    600 clamp(16px, min(3.2vh, 5.6vw), 26px)/1.15 "Chakra Petch",
+    sans-serif;
+  text-align: center;
+}
+.gs .k {
+  font-size: clamp(9px, min(1.7vh, 2.8vw), 11px);
+  letter-spacing: 0.08em;
+  color: var(--mut2);
+  margin-top: min(0.8vh, 5px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 640px) {
+  .gs .k {
+    font-size: clamp(7px, min(1.5vh, 2.4vw), 9.5px);
+    letter-spacing: 0.03em;
+  }
+}
+.gstats .gs:nth-child(1) .v {
+  color: #2f9468;
+}
+.gstats .gs:nth-child(2) .v {
+  color: #4257b8;
+}
+.gstats .gs:nth-child(3) .v {
+  color: #e0862e;
+}
+.gstats .gs:nth-child(4) .v {
+  color: #7a52bd;
+}
+.gstats .gs:nth-child(5) .v {
+  color: #2a93a8;
+}
+.gstats .gs:nth-child(6) .v {
+  color: #c23a55;
+}
+.gstats .gs:nth-child(7) .v {
+  color: #b89a2e;
+}
+.gstats .gs:nth-child(8) .v {
+  color: #2a93a8;
+}
+.gstats .gs:nth-child(9) .v {
+  color: #7a52bd;
+}

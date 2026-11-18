@@ -1,0 +1,63 @@
+# The front door of the VPS stack: the page, its config and the socket behind one address.
+# SITE_ADDRESS (compose .env) decides the address:
+#   :80                plain HTTP on any host name (first test, or behind another TLS terminator)
+#   play.example.org   a real name: Caddy gets and renews the certificate by itself
+{
+	# The admin API listens on localhost inside the container; the health check asks it.
+	admin localhost:2019
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=15552000"
+		-Server
+	}
+
+	# Never public: /metrics is for Prometheus on the private network. The server is not
+	# routed here at all except the paths below; this makes the refusal explicit.
+	@private path /metrics /metrics/*
+	handle @private {
+		respond "not found" 404
+	}
+
+	# The room server. Host is passed through unchanged, which is what its origin check compares with.
+	handle /ws {
+		reverse_proxy server:8787
+	}
+	handle /api/v1/* {
+		reverse_proxy server:8787
+	}
+	handle /healthz {
+		reverse_proxy server:8787
+	}
+	handle /readyz {
+		reverse_proxy server:8787
+	}
+
+	# Tells the page where its server is, so one build runs anywhere (docs/DEPLOYMENT.md). "/" is
+	# this address itself; the page adds the socket path (/ws) to it, so it must not be written here.
+	# To add Supabase or other brokers here, put them in this JSON (same shape as config.json).
+	handle /config.json {
+		header Content-Type application/json
+		header Cache-Control "no-store"
+		respond `{"server":{"url":"/"}}` 200
+	}
+
+	# The page, the service worker and the manifest are checked on every visit; the files in /assets
+	# carry a hash of their content in their name and never change; the icons rarely do.
+	handle {
+		root * /srv
+		@assets path /assets/*
+		@icons path /icon-192.png /icon-512.png
+		@pages not path /assets/* /icon-192.png /icon-512.png
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header @icons Cache-Control "public, max-age=86400"
+		header @pages Cache-Control "no-cache"
+		file_server
+	}
+}

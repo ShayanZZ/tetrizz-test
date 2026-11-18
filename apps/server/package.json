@@ -1,0 +1,26 @@
+{
+  "name": "@tetrizz/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "vite build",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.3.7",
+    "@prometheus-io/client": "^0.16.1",
+    "@tetrizz/protocol": "*",
+    "bowser": "^2.15.0",
+    "fastify": "^5.12.8",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.2"
+  }
+}

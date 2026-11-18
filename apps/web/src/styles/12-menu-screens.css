@@ -1,0 +1,140 @@
+.menu-screen.active .screen-body .step:not([data-bot-step]),
+.menu-screen.active .screen-body .grp-title,
+.menu-screen.active .screen-body .start-wrap,
+.menu-screen.active .screen-body .mp-lobby,
+.menu-screen.active .screen-body .vsm-grid,
+.menu-screen.active .screen-body .vsm-card,
+.menu-screen.active .screen-body .mp-rules,
+.menu-screen.active .screen-body .theme-picker,
+.menu-screen.active .screen-body .online-lobby-box,
+.menu-screen.active .screen-body .ctrl-tabs,
+.menu-screen.active .screen-body .ctrl-page,
+.menu-screen.active .screen-body .scoreList,
+.menu-screen.active .screen-body .replay-list,
+.menu-screen.active .screen-body .bind-note,
+.menu-screen.active .final-score,
+.menu-screen.active .m-best,
+.menu-screen.active .gstats .gs,
+.menu-screen.active .vs-final,
+.menu-btns > .menu-btn {
+  animation: mmIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+.menu-screen.active .mode-grid > .mode-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.menu-screen.active .mode-grid > .mode-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.menu-screen.active .mode-grid > .mode-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.menu-screen.active .mode-grid > .mode-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.menu-screen.active .mode-grid > .mode-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.menu-screen.active .vsm-grid > .vsm-card:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.menu-screen.active .vsm-grid > .vsm-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.menu-screen.active .vsm-grid > .vsm-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.menu-screen.active .vsm-grid > .vsm-card:nth-child(4) {
+  animation-delay: 0.16s;
+}
+.menu-screen.active .vsm-grid > .vsm-card:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.menu-screen.active .gstats .gs:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.menu-screen.active .gstats .gs:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.menu-screen.active .gstats .gs:nth-child(3) {
+  animation-delay: 0.11s;
+}
+.menu-screen.active .gstats .gs:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.menu-screen.active .gstats .gs:nth-child(5) {
+  animation-delay: 0.19s;
+}
+.menu-screen.active .gstats .gs:nth-child(n + 6) {
+  animation-delay: 0.23s;
+}
+.menu-screen.active .menu-btns > .menu-btn:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.menu-screen.active .menu-btns > .menu-btn:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.menu-screen.active .menu-btns > .menu-btn:nth-child(3) {
+  animation-delay: 0.11s;
+}
+.menu-screen.active .menu-btns > .menu-btn:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.menu-screen.active .menu-btns > .menu-btn:nth-child(n + 6) {
+  animation-delay: 0.23s;
+}
+.menu-screen.active .screen-body .settings > *:nth-child(n + 4) {
+  animation-delay: 0.06s;
+}
+.menu-screen.active .mode-card {
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+.menu-screen[data-screen="vsbot"] .step,
+.menu-screen[data-screen="vsbot"] .grp-title,
+.menu-screen[data-screen="vsbot"] .start-wrap,
+.menu-screen[data-screen="vsbot"] .mp-lobby,
+.menu-screen[data-screen="vsbot"] .mp-card,
+.menu-screen[data-screen="vsbot"] .vsm-grid,
+.menu-screen[data-screen="vsbot"] .vsm-card,
+.menu-screen[data-screen="vsbot"] .mp-rules,
+.menu-screen[data-screen="online-lobby"] .step,
+.menu-screen[data-screen="online-lobby"] .grp-title,
+.menu-screen[data-screen="online-lobby"] .start-wrap,
+.menu-screen[data-screen="online-lobby"] .online-lobby-box,
+.menu-screen[data-screen="online-lobby"] .vsm-grid,
+.menu-screen[data-screen="online-lobby"] .vsm-card,
+.menu-screen[data-screen="online-lobby"] .mp-rules,
+.menu-screen[data-screen="online-lobby"] .bindList {
+  animation: none !important;
+}
+.menu-btn {
+  width: min(340px, 86vw);
+  font:
+    700 min(2.4vh, 3.6vw, 17px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.2em;
+  padding: min(2.7vh, 21px) 14px;
+  border-radius: min(1.8vh, 13px);
+  cursor: pointer;
+  transition: 0.15s;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--txt);
+  text-align: center;
+}
+@media (pointer: fine) {
+  .menu-btn:hover {
+    border-color: rgba(var(--acchi-rgb), 0.55);
+    color: #fff;
+  }
+}
+.menu-btn.primary {
+  border: none;
+  color: #e8edff;
+  background: linear-gradient(180deg, var(--brand-blue), var(--brand-blue-deep));
+  box-shadow: 0 10px 30px -10px rgba(var(--acc-rgb), 0.8);
+}
+@media (pointer: fine) {
+  .menu-btn.primary:hover {
+    transform: translateY(-2px);
+  }
+}

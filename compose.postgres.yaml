@@ -1,0 +1,58 @@
+# Adds PostgreSQL and points the server at it (instead of the SQLite file).
+#   COMPOSE_FILE=compose.yaml:compose.postgres.yaml
+# POSTGRES_PASSWORD must be set in .env, with letters and digits only (it goes into an address):
+#   openssl rand -hex 24
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:18.7-alpine3.24
+    restart: unless-stopped
+    init: true
+    environment:
+      POSTGRES_USER: tetrizz
+      POSTGRES_DB: tetrizz
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env, letters and digits only (openssl rand -hex 24)}"
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-128MB}
+      - -c
+      - max_connections=40
+    # PostgreSQL 18 and later keep the data in a folder named after the major version below this one,
+    # so a later major version can be upgraded in place with pg_upgrade --link (docs/DOCKER.md).
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -q -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    mem_limit: ${POSTGRES_MEMORY:-384m}
+    stop_grace_period: 30s
+    logging: *logging
+
+  server:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_DRIVER: postgres
+      DATABASE_URL: postgres://tetrizz:${POSTGRES_PASSWORD}@postgres:5432/tetrizz

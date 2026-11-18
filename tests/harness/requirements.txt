@@ -1,0 +1,4 @@
+# Playwright 1.63.0 ships the Chromium build the screenshot goldens were recorded with.
+playwright==1.63.0
+numpy==2.5.4
+pillow==13.0.0

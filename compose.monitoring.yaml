@@ -1,0 +1,174 @@
+# Adds Prometheus, Grafana, Loki (logs), Grafana Alloy (ships the containers' logs to Loki) and a
+# node exporter (the machine's CPU, memory and disk). Turns /metrics on in the room server.
+#   COMPOSE_FILE=compose.yaml:compose.monitoring.yaml
+# This is the heavy part of the stack (roughly 0.6 to 1.2 GB of memory): see docs/DOCKER.md for what to trim.
+# Nothing here is reachable from the internet: only Grafana publishes a port, and only on 127.0.0.1.
+# GRAFANA_ADMIN_PASSWORD must be set in .env.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-monitor: &monitor
+  restart: unless-stopped
+  init: true
+  logging: *logging
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  # Same job as the one in compose.yaml: the folders of the monitoring tools belong to the users they run as.
+  init-monitoring:
+    image: tetrizz-server:local
+    build:
+      context: .
+      target: server
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        mkdir -p /data/prometheus /data/grafana /data/loki /data/alloy &&
+        chown -R 65534:65534 /data/prometheus &&
+        chown -R 472:0 /data/grafana &&
+        chown -R 10001:10001 /data/loki
+    volumes:
+      - ./data:/data
+    read_only: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    restart: "no"
+    logging: *logging
+
+  server:
+    environment:
+      METRICS: "on"
+
+  prometheus:
+    <<: *monitor
+    image: prom/prometheus:v3.13.5
+    depends_on:
+      init-monitoring:
+        condition: service_completed_successfully
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}
+      - --storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-1GB}
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+      - ./data/prometheus:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    cap_drop:
+      - ALL
+    mem_limit: ${PROMETHEUS_MEMORY:-384m}
+
+  node-exporter:
+    <<: *monitor
+    image: prom/node-exporter:v1.12.1
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|var/lib/docker)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    cap_drop:
+      - ALL
+    mem_limit: 64m
+
+  loki:
+    <<: *monitor
+    image: grafana/loki:3.7.9
+    depends_on:
+      init-monitoring:
+        condition: service_completed_successfully
+    command:
+      - -config.file=/etc/loki/loki.yml
+      - -config.expand-env=true
+    environment:
+      LOKI_RETENTION: ${LOKI_RETENTION:-168h}
+    volumes:
+      - ./deploy/loki:/etc/loki:ro
+      - ./data/loki:/loki
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:3100/ready || curl -fsS -o /dev/null http://127.0.0.1:3100/ready",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    cap_drop:
+      - ALL
+    mem_limit: ${LOKI_MEMORY:-256m}
+
+  # Reads the other containers' logs through the Docker socket (read-only mount; the Docker API
+  # behind it is not read-only, so treat this container as trusted). docs/DOCKER.md says how to leave it out.
+  alloy:
+    <<: *monitor
+    image: grafana/alloy:v1.21.2
+    depends_on:
+      loki:
+        condition: service_healthy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./deploy/alloy:/etc/alloy:ro
+      - ./data/alloy:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    mem_limit: ${ALLOY_MEMORY:-192m}
+
+  grafana:
+    <<: *monitor
+    image: grafana/grafana:13.3.1
+    depends_on:
+      init-monitoring:
+        condition: service_completed_successfully
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana-dashboards/overview.json
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana-dashboards:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:3000/api/health || curl -fsS -o /dev/null http://127.0.0.1:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    cap_drop:
+      - ALL
+    mem_limit: ${GRAFANA_MEMORY:-384m}

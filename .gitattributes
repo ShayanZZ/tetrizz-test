@@ -1,0 +1,5 @@
+* text=auto eol=lf
+# The v1.2.0 reference files and the recordings are compared byte for byte; keep them as they are.
+legacy/** -text
+*.png binary
+*.tzzreplay binary

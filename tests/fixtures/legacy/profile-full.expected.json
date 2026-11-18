@@ -1,0 +1,23 @@
+{
+ "errors": [],
+ "mode": "vsbot",
+ "opts": "{\"DAS\":120,\"ARR\":20,\"sdfIdx\":5,\"fxStrength\":30,\"clearFx\":40,\"gridVis\":30,\"blockShape\":\"rounded\",\"blockStyle\":\"matt\",\"colorTheme\":\"classic\",\"volume\":55,\"mouseEnabled\":false,\"mouseSteerOn\":true,\"ghostMode\":\"color\",\"bgEnabled\":true,\"gestures\":{\"tap\":\"rotateCW\",\"swipeUp\":\"rotate180\",\"swipeDown\":\"soft\",\"flickDown\":\"hard\",\"flickUp\":\"hold\"}}",
+ "replays": [
+  {
+   "dur": 42848,
+   "frames": 954,
+   "id": "1a767ca8-2f4e-4c32-bce1-469a83f055cc",
+   "nR": 1,
+   "rounds": 1
+  },
+  {
+   "dur": 32320,
+   "frames": 436,
+   "id": "4b810bd7-db06-46b7-a039-8e6d8dfd42e5",
+   "nR": 1,
+   "rounds": 1
+  }
+ ],
+ "replaysText": "\u2039 BACK REPLAYS LOAD FILE MULTIPLAYER \u00b7 LOCAL \u00b7 BATTLE \u00b7 2P \u00b7 1 BOT 2023/11/14 22:14 \u00b7 1 ROUND \u00b7 0:42 \u00b7 13.5 KB PLAY SINGLE \u00b7 SPRINT 2023/11/14 22:13 \u00b7 1 ROUND \u00b7 0:32 \u00b7 7.8 KB PLAY",
+ "scoresText": "\u2039 BACK SCOREBOARD CLEAR ENDLESS SPRINT ULTRA 4 WIDE No records yet \u2014 go set one!"
+}

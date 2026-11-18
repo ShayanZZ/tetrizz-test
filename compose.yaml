@@ -1,0 +1,105 @@
+# TetriZZ on a VPS, the light setup: Caddy (page, TLS, front door) + the room server with SQLite.
+# Everything that must survive is under ./data (bind mounts, nothing lives only inside a container).
+#
+#   cp deploy/env.example .env        # then edit it
+#   docker compose up -d --build
+#
+# Add PostgreSQL and/or the monitoring stack by listing more files in COMPOSE_FILE (.env):
+#   COMPOSE_FILE=compose.yaml:compose.postgres.yaml:compose.monitoring.yaml
+# docs/DOCKER.md explains each setting.
+
+name: tetrizz
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardened: &hardened
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *logging
+
+services:
+  # Runs once and exits: makes the data folders and gives the server's folder to the user it runs as.
+  # (A bind mount that Docker creates itself belongs to root, and the server does not run as root.)
+  init:
+    build: &server-build
+      context: .
+      target: server
+    image: tetrizz-server:local
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command:
+      - mkdir -p /data/sqlite /data/caddy/data /data/caddy/config && chown -R node:node /data/sqlite
+    volumes:
+      - ./data:/data
+    read_only: true
+    network_mode: none
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    restart: "no"
+    logging: *logging
+
+  server:
+    <<: *hardened
+    build: *server-build
+    image: tetrizz-server:local
+    init: true
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    # Any setting of apps/server/.env.example may go in ./server.env (optional file); the lines below win.
+    env_file:
+      - path: ./server.env
+        required: false
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8787"
+      TRUST_PROXY: "1"
+      DB_DRIVER: sqlite
+      SQLITE_PATH: /data/sqlite/tetrizz.db
+      NODE_OPTIONS: --max-old-space-size=${SERVER_HEAP_MB:-192}
+    volumes:
+      - ./data/sqlite:/data/sqlite
+    tmpfs:
+      - /tmp:size=16m
+    read_only: true
+    mem_limit: ${SERVER_MEMORY:-256m}
+    stop_grace_period: 15s
+
+  caddy:
+    <<: *hardened
+    build:
+      context: .
+      target: web
+      args:
+        TETRIZZ_SUPABASE_URL: ${TETRIZZ_SUPABASE_URL:-}
+        TETRIZZ_SUPABASE_KEY: ${TETRIZZ_SUPABASE_KEY:-}
+        TETRIZZ_MQTT_BROKERS: ${TETRIZZ_MQTT_BROKERS:-}
+    image: tetrizz-web:local
+    cap_add:
+      - NET_BIND_SERVICE
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      server:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./data/caddy/data:/data
+      - ./data/caddy/config:/config
+    mem_limit: ${CADDY_MEMORY:-96m}

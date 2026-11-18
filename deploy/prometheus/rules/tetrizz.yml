@@ -1,0 +1,145 @@
+# Alert rules for the room server and the machine. Prometheus evaluates them and shows them in its
+# own UI (Alerts) and in Grafana; sending them somewhere is a separate step (docs/DOCKER.md).
+# The server's own notifier (Telegram, Discord) covers what the server can see from inside.
+# Tests: promtool test rules deploy/prometheus/tests/tetrizz.test.yml
+groups:
+  - name: tetrizz-server
+    rules:
+      - alert: TetrizzServerDown
+        expr: up{job="tetrizz"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: The room server does not answer /metrics
+          description: Prometheus could not scrape the server for 2 minutes. Players cannot create or join server rooms.
+
+      - alert: TetrizzDatabaseDown
+        expr: tetrizz_db_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: The server cannot reach its database
+          description: tetrizz_db_up has been 0 for 2 minutes. Telemetry is not being stored.
+
+      - alert: TetrizzDatabaseErrors
+        expr: increase(tetrizz_db_errors_total[10m]) > 5
+        labels:
+          severity: warning
+        annotations:
+          summary: Database errors in the room server
+          description: More than 5 database errors in 10 minutes. Look at the server's log.
+
+      - alert: TetrizzMaintenanceStalled
+        # The settle job runs every JANITOR_SETTLE_MINUTES (60 by default); 3 hours is three missed runs.
+        expr: time() - tetrizz_janitor_last_ok_timestamp_seconds{exported_job="settle"} > 3 * 3600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: The maintenance job has not succeeded for over 3 hours
+          description: Rollups, purging and the size budget are not being kept up. Look at the server's log.
+
+      - alert: TetrizzDatabaseNearBudget
+        expr: tetrizz_db_size_bytes / tetrizz_db_budget_bytes > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: The database is above 80 % of DB_MAX_MB
+          description: At 100 % the server halves its retention periods until the database fits.
+
+      - alert: TetrizzDatabaseOverBudget
+        expr: tetrizz_db_size_bytes / tetrizz_db_budget_bytes > 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: The database is over DB_MAX_MB
+          description: The server is cutting retention. Raise DB_MAX_MB or the disk, or accept shorter history.
+
+      - alert: TetrizzRetentionCut
+        expr: tetrizz_retention_cut_level > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Retention periods are shortened to stay inside DB_MAX_MB
+          description: The cut level is {{ $value }}. On PostgreSQL a cut can stay in force until VACUUM FULL.
+
+      - alert: TetrizzEventLoopLag
+        expr: nodejs_eventloop_lag_p99_seconds{job="tetrizz"} > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: The room server's event loop is slow
+          description: 99th percentile of the event loop delay is above 0.5 s. Look at CPU and at what is running on the machine.
+
+      - alert: TetrizzConnectionsRefused
+        expr: sum(increase(tetrizz_connections_refused_total{reason=~"total|perIp|rate"}[10m])) > 50
+        labels:
+          severity: warning
+        annotations:
+          summary: Many connections refused because of limits
+          description: More than 50 in 10 minutes. Either the server is full (MAX_CONNECTIONS) or one address is hammering it.
+
+      - alert: TetrizzNotificationsFailing
+        expr: increase(tetrizz_notifications_total{result="failed"}[1h]) > 3
+        labels:
+          severity: warning
+        annotations:
+          summary: The server cannot deliver its Telegram or Discord messages
+          description: More than 3 failed deliveries in an hour. Check the bot token, chat id or webhook address.
+
+  - name: host
+    rules:
+      - alert: HostDown
+        expr: up{job="node"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: The node exporter does not answer
+          description: Machine metrics are missing for 5 minutes.
+
+      - alert: HostDiskLow
+        expr: >-
+          node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|ramfs"}
+          / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|ramfs"} < 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Less than 15 % of the disk is free
+          description: Free space on / is {{ $value | humanizePercentage }}. Old logs, backups and Docker images are the usual suspects.
+
+      - alert: HostDiskCritical
+        expr: >-
+          node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|ramfs"}
+          / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|ramfs"} < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Less than 5 % of the disk is free
+          description: Free space on / is {{ $value | humanizePercentage }}. Databases stop working when the disk is full.
+
+      - alert: HostMemoryLow
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Less than 10 % of memory is available
+          description: Available memory is {{ $value | humanizePercentage }}. Trim the monitoring stack or add memory.
+
+      - alert: HostCpuSaturated
+        expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: The CPU has been above 90 % for 15 minutes
+          description: Busy share is {{ $value | humanizePercentage }}.

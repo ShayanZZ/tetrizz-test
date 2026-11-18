@@ -1,0 +1,18 @@
+# The build context is the repository root; only what the Dockerfile copies matters.
+.git
+.github
+**/node_modules
+**/dist
+**/dist-single
+coverage
+data
+backups
+secrets
+.env
+.env.*
+server.env
+docs
+tests
+legacy
+*.md
+**/*.log

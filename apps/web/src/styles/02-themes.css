@@ -1,0 +1,113 @@
+:root {
+  --cyan: #1a1f30;
+  --acc-rgb: 26, 31, 48;
+  --acchi: #7c8cc7;
+  --acchi-rgb: 124, 140, 199;
+  --accLo: #0f1220;
+  --bg: #0a0f18;
+  --line: rgba(148, 170, 210, 0.13);
+  --line-strong: rgba(148, 170, 210, 0.34);
+  --grp: #4257b8;
+  --txt: #dfe7f3;
+  --mut: #7d8aa3;
+  --mut2: #9aabca;
+  --gold: #ffd23f;
+  --purple: #c06cf5;
+  --green: #4fe08a;
+  --red: #9e2430;
+  --p1: #161d2b;
+  --p2: #0d121d;
+  --cf1: #1a2130;
+  --cf2: #10151f;
+  --bar-bg: rgba(18, 24, 36, 0.92);
+  --chip-bg: rgba(255, 255, 255, 0.03);
+  --overlay-bg: rgba(10, 15, 24, 1);
+  --tbtn-bg: rgba(16, 23, 36, 0.92);
+  --t1: rgba(6, 9, 16, 0.96);
+  --t2: rgba(6, 9, 16, 0.7);
+  --t3: rgba(6, 9, 16, 0);
+  --gs1: rgba(255, 255, 255, 0.06);
+  --gs2: rgba(255, 255, 255, 0.02);
+  --cf-text: #cfd9f2;
+  --slider-track: rgba(255, 255, 255, 0.14);
+  --glowA: rgba(var(--acc-rgb), 0.5);
+  --glowB: rgba(192, 108, 245, 0.07);
+  --vig: rgba(3, 6, 11, 0.72);
+  --panel-g: linear-gradient(180deg, var(--p1), var(--p2));
+  --cf-g: linear-gradient(180deg, var(--cf1), var(--cf2));
+  --touch-bg: linear-gradient(0deg, var(--t1), var(--t2) 74%, var(--t3) 100%);
+  --gs-g: linear-gradient(180deg, var(--gs1), var(--gs2));
+  --brand-blue: #2a5aa0;
+  --brand-blue-deep: #152e57;
+  --brand-red: #df2020;
+  --logo-blue: #2d309a;
+}
+:root[data-theme="light"] {
+  --bg: #c2cfdc;
+  --green: #0d7a43;
+  --gold: #a67c00;
+  --line: rgba(25, 45, 90, 0.18);
+  --line-strong: rgba(25, 45, 90, 0.42);
+  --txt: #1b2434;
+  --mut: #5c6a84;
+  --mut2: #46536e;
+  --p1: #f0f4f9;
+  --p2: #e4ebf4;
+  --cf1: #f0f4f9;
+  --cf2: #e4ebf4;
+  --bar-bg: rgba(228, 235, 244, 0.92);
+  --chip-bg: rgba(25, 45, 90, 0.06);
+  --overlay-bg: rgba(194, 207, 220, 1);
+  --tbtn-bg: rgba(240, 244, 249, 0.94);
+  --t1: rgba(194, 207, 220, 0.97);
+  --t2: rgba(194, 207, 220, 0.72);
+  --t3: rgba(194, 207, 220, 0);
+  --gs1: rgba(25, 45, 90, 0.065);
+  --gs2: rgba(25, 45, 90, 0.025);
+  --cf-text: #33415e;
+  --slider-track: rgba(25, 45, 90, 0.2);
+  --glowA: rgba(var(--acc-rgb), 0.2);
+  --glowB: rgba(192, 108, 245, 0.12);
+  --vig: rgba(110, 130, 170, 0.2);
+  --acchi: #324bb0;
+  --brand-blue: #2a5aa0;
+  --brand-blue-deep: #152e57;
+}
+:root[data-theme="light"] {
+  color-scheme: dark light;
+}
+:root[data-theme="light"] #wrap,
+:root[data-theme="light"] #botWrap {
+  box-shadow: 0 30px 80px -30px rgba(30, 45, 80, 0.35);
+}
+:root[data-theme="dark"] .panel {
+  background: linear-gradient(180deg, #0c111d, #070b13);
+}
+:root[data-theme="dark"] .mm-card,
+:root[data-theme="dark"] .mm-bar,
+:root[data-theme="dark"] .mode-card,
+:root[data-theme="dark"] .mp-card,
+:root[data-theme="dark"] .vsm-card,
+:root[data-theme="dark"] .replay-card {
+  background: linear-gradient(180deg, #1d2637, #151d2d);
+}
+:root[data-theme="light"] .mm-card,
+:root[data-theme="light"] .mode-card,
+:root[data-theme="light"] .mm-bar {
+  box-shadow:
+    0 1px 2px rgba(25, 45, 90, 0.05),
+    0 12px 28px -20px rgba(25, 45, 90, 0.5);
+}
+@media (pointer: fine) {
+  :root[data-theme="light"] .hbtn:hover {
+    color: var(--txt);
+  }
+}
+@media (pointer: fine) {
+  :root[data-theme="light"] .menu-btn:not(.primary):not(.danger):hover {
+    color: var(--txt);
+  }
+}
+:root[data-theme="light"] .tbtn:active {
+  background: rgba(25, 45, 90, 0.12);
+}

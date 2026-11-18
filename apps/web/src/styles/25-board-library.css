@@ -1,0 +1,836 @@
+#capStage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+  min-height: 80px;
+}
+#capCanvas {
+  touch-action: none;
+  display: block;
+  cursor: crosshair;
+}
+#capNote {
+  min-height: 18px;
+}
+#capWork {
+  margin-top: 6px;
+}
+#fumenInput {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cbl-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.cbl-item.sel {
+  border-color: var(--acchi);
+  box-shadow:
+    0 0 0 1px var(--acchi),
+    0 0 14px -6px rgba(var(--acchi-rgb), 0.7);
+}
+.cbl-item img {
+  height: 46px;
+  width: auto;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #05070c;
+  flex: 0 0 auto;
+}
+.cbl-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cbl-name {
+  font:
+    700 13px/1.2 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cbl-meta {
+  font:
+    500 10px/1.3 "IBM Plex Mono",
+    monospace;
+  color: var(--mut2);
+  letter-spacing: 0.06em;
+}
+.cbl-note {
+  opacity: 0.72;
+}
+.bvq {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--chip-bg);
+}
+.bvq-t {
+  font:
+    700 11px/1.2 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.14em;
+  color: var(--mut2);
+}
+.bvq-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bvq-lb {
+  font:
+    600 10px/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  color: var(--mut2);
+  width: 64px;
+  flex: 0 0 auto;
+}
+.bvq-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-height: 30px;
+  align-items: center;
+}
+.bvq-chip {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font:
+    700 13px/1 "Chakra Petch",
+    sans-serif;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  padding: 0;
+}
+.bvq-chip.sel {
+  outline: 2px solid var(--acchi);
+  outline-offset: 1px;
+}
+.bvq-chip.none {
+  background: transparent;
+  color: var(--mut2);
+  text-shadow: none;
+}
+.bvq-empty {
+  font:
+    500 10px/1 "IBM Plex Mono",
+    monospace;
+  color: var(--mut2);
+  opacity: 0.75;
+  letter-spacing: 0.06em;
+}
+body.replaying #touch,
+body.replaying #touch2 {
+  display: none !important;
+}
+.replay-controls > .replay-bar {
+  flex: 1 1 auto;
+}
+.cbl-mv {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+@media (max-width: 560px) {
+  .cbl-ic {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 0 !important;
+  }
+  .cbl-item {
+    gap: 8px !important;
+    padding: 10px 8px !important;
+  }
+  .cbl-mvb {
+    width: 28px;
+  }
+  .cbl-name {
+    font-size: 13px !important;
+    white-space: normal !important;
+  }
+  .cbl-info {
+    min-width: 0;
+  }
+}
+.cbl-mvb {
+  width: 34px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--mut2);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.cbl-mvb:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+.cbl-mv {
+  gap: 2px;
+  align-items: center;
+}
+.cbl-mvb {
+  height: 20px;
+}
+.cbl-grip {
+  width: 34px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mut2);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+}
+.cbl-item {
+  position: relative;
+}
+.cbl-item.dragging {
+  z-index: 6;
+  transition: none !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  border-color: var(--acchi);
+}
+.cbl-item.dragging .cbl-grip {
+  cursor: grabbing;
+}
+.cap-adj {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+.cap-adj-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+.cap-adj-row .lb {
+  width: 84px;
+  font:
+    600 10px/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+  color: var(--mut2);
+}
+.cap-st {
+  width: 42px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--chip-bg);
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+}
+.cap-v {
+  min-width: 34px;
+  text-align: center;
+  font:
+    700 15px "Chakra Petch",
+    sans-serif;
+}
+#ovSnap {
+  z-index: 80;
+}
+.snap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.snap-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--chip-bg);
+  color: inherit;
+  cursor: pointer;
+  font:
+    600 11px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+}
+.snap-card:hover,
+.snap-card:active {
+  border-color: var(--acchi);
+}
+.snap-view {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: center;
+}
+.snap-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--chip-bg);
+}
+.snap-lb {
+  font:
+    600 10px/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.12em;
+  color: var(--mut2);
+  margin-bottom: 6px;
+}
+.cbl-ic {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--mut2);
+  cursor: pointer;
+  transition: 0.12s;
+  padding: 0;
+}
+.cbl-ic svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+@media (pointer: fine) {
+  .cbl-ic:hover {
+    color: var(--acchi);
+    border-color: rgba(var(--acchi-rgb), 0.5);
+  }
+  .cbl-ic.del:hover {
+    color: #f5546b;
+    border-color: rgba(245, 84, 107, 0.5);
+  }
+}
+.cbl-empty {
+  font:
+    500 12px/1.5 "IBM Plex Mono",
+    monospace;
+  color: var(--mut);
+  text-align: center;
+  padding: 14px 0;
+}
+.over-grid .mm-label {
+  white-space: normal;
+  min-height: 0;
+  line-height: 1.15;
+}
+#capListNote {
+  margin-top: 12px;
+}
+#capPrevInfo {
+  margin-bottom: 12px;
+  text-align: center;
+}
+#capNote {
+  margin-bottom: 10px;
+}
+#capPrevBox .cap-adj {
+  margin: 14px 0;
+}
+#capPrevBox .cap-adj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#capPrevBox .cap-adj-row {
+  display: grid;
+  grid-template-columns: 84px 44px 64px 44px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+#capPrevBox .cap-adj-row .cap-v {
+  text-align: center;
+  min-width: 0;
+}
+#capPrevBox .cap-st {
+  width: 100%;
+}
+#capPAuto {
+  width: 100% !important;
+  padding: 0 !important;
+}
+#capPrev {
+  touch-action: none;
+  cursor: cell;
+}
+#capPrevQ {
+  display: flex;
+  justify-content: center;
+}
+#capPrevQ .bvq {
+  margin: 0 auto;
+}
+@media (min-width: 800px) {
+  .snap-grid {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .snap-card {
+    flex: 0 0 auto;
+  }
+  #snapBody > .dev-note {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  #ovSnap .screen-body,
+  #ovSnap .settings {
+    max-width: min(96vw, 1100px) !important;
+    width: 100%;
+  }
+}
+#capPrevTools {
+  margin: 10px 0 4px;
+  justify-content: center;
+}
+#capPrevQ {
+  margin: 12px 0;
+}
+.snap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#snapTitle {
+  font-size: clamp(11px, 3.4vw, 17px) !important;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 62vw;
+}
+.cbl-item img {
+  height: 64px !important;
+  border-radius: 0 !important;
+}
+#capCanvas {
+  cursor: crosshair;
+}
+.bv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
+}
+.bv-btn {
+  font:
+    700 12px/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--txt);
+  cursor: pointer;
+}
+.bv-btn.active {
+  border-color: var(--acchi);
+  color: var(--acchi);
+  box-shadow: 0 0 0 1px var(--acchi);
+}
+.bv-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+body.practice #ovOver .over-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body.practice #ovOver .over-grid [data-nav="again"] {
+  order: 1;
+}
+body.practice #ovOver .over-grid [data-nav="menu"] {
+  order: 2;
+}
+body.practice #ovOver .over-grid #overPracticeBtn {
+  order: 3;
+}
+body.practice #ovOver .over-grid #saveReplayBtn {
+  order: 4;
+}
+body.practice #ovOver .over-grid #overVsBtn {
+  display: none !important;
+}
+body.practice #ovOver .over-grid .mm-label {
+  white-space: normal;
+  min-height: 0;
+  line-height: 1.15;
+}
+#snapBody > *,
+#ovBoardView .screen-body > *,
+#capPrevBox > *,
+#ovCapture .screen-body > .cap-adj-row,
+#capBoardList,
+.snap-grid > .snap-card {
+  animation: mmIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+#snapBody > *:nth-child(2),
+#ovBoardView .screen-body > *:nth-child(2),
+#capPrevBox > *:nth-child(2),
+.snap-grid > .snap-card:nth-child(2) {
+  animation-delay: 0.04s;
+}
+#snapBody > *:nth-child(3),
+#ovBoardView .screen-body > *:nth-child(3),
+#capPrevBox > *:nth-child(3),
+.snap-grid > .snap-card:nth-child(3) {
+  animation-delay: 0.08s;
+}
+#snapBody > *:nth-child(4),
+#ovBoardView .screen-body > *:nth-child(4),
+#capPrevBox > *:nth-child(4),
+.snap-grid > .snap-card:nth-child(4) {
+  animation-delay: 0.12s;
+}
+#snapBody > *:nth-child(n + 5),
+#ovBoardView .screen-body > *:nth-child(n + 5),
+#capPrevBox > *:nth-child(n + 5),
+.snap-grid > .snap-card:nth-child(n + 5) {
+  animation-delay: 0.16s;
+}
+#ovCapture,
+#ovBoardView,
+#ovSnap {
+  --k: min(1px, 0.211vw, 0.141vh);
+}
+#ovCapture .tp-name,
+#ovBoardView .tp-name {
+  font-size: calc(13 * var(--k));
+  padding: calc(10 * var(--k)) calc(12 * var(--k));
+  border-radius: calc(8 * var(--k));
+}
+.bv-toolbar {
+  gap: calc(8 * var(--k));
+}
+.bv-btn {
+  font-size: calc(12 * var(--k));
+  padding: calc(10 * var(--k)) calc(14 * var(--k));
+  border-radius: calc(8 * var(--k));
+}
+.cap-adj-row {
+  gap: calc(10 * var(--k));
+}
+.cap-adj-row .lb {
+  width: calc(84 * var(--k));
+  font-size: calc(10 * var(--k));
+}
+.cap-st {
+  width: calc(42 * var(--k));
+  height: calc(36 * var(--k));
+  font-size: calc(16 * var(--k));
+  border-radius: calc(9 * var(--k));
+}
+.cap-v {
+  min-width: calc(34 * var(--k));
+  font-size: calc(15 * var(--k));
+}
+#capPrevBox .cap-adj-row {
+  grid-template-columns: calc(84 * var(--k)) calc(44 * var(--k)) calc(64 * var(--k)) calc(
+      44 * var(--k)
+    );
+  gap: calc(8 * var(--k));
+}
+#capPrevBox .cap-st {
+  width: 100%;
+}
+#capPAuto {
+  font-size: calc(11 * var(--k)) !important;
+}
+.bvq {
+  width: min(100%, calc(520 * var(--k)));
+  gap: calc(8 * var(--k));
+  padding: calc(10 * var(--k)) calc(12 * var(--k));
+  border-radius: calc(12 * var(--k));
+}
+.bvq-t {
+  font-size: calc(11 * var(--k));
+}
+.bvq-line {
+  gap: calc(8 * var(--k));
+}
+.bvq-lb {
+  width: calc(64 * var(--k));
+  font-size: calc(10 * var(--k));
+}
+.bvq-chips {
+  gap: calc(5 * var(--k));
+  min-height: calc(30 * var(--k));
+}
+.bvq-chip {
+  width: calc(30 * var(--k));
+  height: calc(30 * var(--k));
+  font-size: calc(13 * var(--k));
+  border-radius: calc(7 * var(--k));
+}
+.bvq-empty {
+  font-size: calc(10 * var(--k));
+}
+.cbl-item {
+  gap: calc(10 * var(--k));
+  padding: calc(8 * var(--k)) calc(10 * var(--k));
+  border-radius: calc(10 * var(--k));
+}
+.cbl-item img {
+  height: calc(64 * var(--k)) !important;
+}
+.cbl-name {
+  font-size: calc(13 * var(--k));
+}
+.cbl-meta {
+  font-size: calc(10 * var(--k));
+}
+.cbl-mvb {
+  width: calc(34 * var(--k));
+  height: calc(20 * var(--k));
+  font-size: calc(11 * var(--k));
+}
+.cbl-grip {
+  width: calc(34 * var(--k));
+  height: calc(24 * var(--k));
+}
+.cbl-grip svg {
+  width: calc(16 * var(--k));
+  height: calc(16 * var(--k));
+}
+.cbl-ic {
+  width: calc(34 * var(--k));
+  height: calc(34 * var(--k));
+}
+.cbl-ic svg {
+  width: calc(15 * var(--k));
+  height: calc(15 * var(--k));
+}
+.snap-grid {
+  grid-template-columns: repeat(auto-fill, minmax(calc(150 * var(--k)), 1fr));
+  gap: calc(10 * var(--k));
+}
+.snap-card {
+  font-size: calc(11 * var(--k));
+  padding: calc(10 * var(--k));
+  gap: calc(8 * var(--k));
+}
+.snap-view {
+  gap: calc(12 * var(--k));
+}
+.snap-side {
+  padding: calc(8 * var(--k));
+}
+.snap-lb {
+  font-size: calc(10 * var(--k));
+}
+#snapTitle {
+  font-size: calc(17 * var(--k)) !important;
+}
+#snBoard,
+#capPrev,
+#bvCanvas,
+.snap-card canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+.snap-view {
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+#snapBody .start-wrap {
+  max-width: calc(440 * var(--k));
+  margin-left: auto;
+  margin-right: auto;
+}
+.lib-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: min(1.2vh, 9px);
+  width: 100%;
+}
+.lib-row .menu-btn {
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  padding: min(2.7vh, 21px) 8px;
+}
+.lib-row.split .w {
+  display: block;
+}
+.lib-row.split .menu-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+  white-space: normal;
+}
+.lib-actions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(calc(120 * var(--k)), 1fr));
+  gap: min(1.2vh, 9px);
+  width: 100%;
+  margin: 0 0 calc(10 * var(--k));
+}
+.lib-actions .menu-btn {
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: min(1.9vh, 3vw, 12px);
+  letter-spacing: 0.08em;
+  padding: min(1.7vh, 12px) 4px;
+}
+#snapBody.noanim > *,
+#snapBody.noanim .snap-card {
+  animation: none !important;
+}
+.nb-step {
+  --nk: min(var(--k), max(0.55px, (100vw - 118px)/360));
+  flex-wrap: wrap;
+  row-gap: calc(8 * var(--nk));
+}
+.nb-step .ctl {
+  margin-left: auto;
+}
+.nb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  column-gap: calc(8 * var(--nk));
+  row-gap: calc(8 * var(--nk));
+  max-width: 100%;
+}
+.nb-grp {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--nk));
+  flex: 0 0 auto;
+}
+.nb-grp .cap-st {
+  flex: 0 0 auto;
+  width: calc(32 * var(--nk));
+  height: calc(38 * var(--nk));
+  font-size: calc(16 * var(--nk));
+}
+.nb-grp .tp-name {
+  flex: 0 0 auto;
+  width: calc(50 * var(--nk));
+  height: calc(38 * var(--nk));
+  box-sizing: border-box;
+  padding: 0;
+  text-align: center;
+  appearance: textfield;
+}
+.nb-grp .tp-name::-webkit-outer-spin-button,
+.nb-grp .tp-name::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.nb-cap {
+  font-size: calc(9 * var(--nk));
+  letter-spacing: 0.14em;
+  color: var(--mut2);
+  white-space: nowrap;
+}
+.nb-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(18 * var(--nk));
+  color: var(--mut2);
+  font-size: calc(14 * var(--nk));
+}
+.nb-row .nb-t {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: calc(58 * var(--nk));
+  height: calc(38 * var(--nk));
+  padding: 0 calc(12 * var(--nk));
+  background: var(--chip-bg);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(9 * var(--nk));
+  color: var(--txt);
+  font:
+    700 calc(13 * var(--nk))/1 "IBM Plex Mono",
+    monospace;
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.nb-row .nb-t:hover {
+  border-color: rgba(var(--acchi-rgb), 0.55);
+  background: rgba(var(--acchi-rgb), 0.12);
+  color: var(--acchi);
+}
+.nb-row .nb-t:active {
+  transform: scale(0.97);
+  background: rgba(var(--acchi-rgb), 0.18);
+}
+@media (max-width: 560px) {
+  .step.nb-step .lb {
+    font-size: max(9px, calc(12 * var(--nk)));
+    letter-spacing: 0.06em;
+  }
+}

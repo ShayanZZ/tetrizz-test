@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-single/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+apps/web/public/config.json
+.DS_Store
+__pycache__/
+tests/harness/__pycache__/
+# The VPS stack (compose.yaml): its settings and everything it keeps
+server.env
+/data/
+/backups/
+/secrets/

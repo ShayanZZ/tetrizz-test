@@ -1,0 +1,315 @@
+@media (pointer: coarse) {
+  #onlineLobby .bindrow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  #onlineLobby .bindrow .bchips {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  #onlineLobby .bindrow .bl {
+    white-space: normal;
+    line-height: 1.4;
+  }
+  #onlineLobby .swap-btn,
+  #onlineLobby .kick-btn {
+    margin-left: 0;
+  }
+}
+@media (pointer: fine) {
+  body.vsplay.online-play:not(.onlineMulti) {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: calc(var(--u) * 1.4);
+  }
+  body.vsplay.online-play:not(.onlineMulti) main {
+    grid-column: auto;
+    grid-row: auto;
+    align-self: stretch;
+    zoom: 1;
+  }
+  body.vsplay.online-play:not(.onlineMulti) #botArena {
+    zoom: 1;
+    align-self: stretch;
+  }
+
+  body.vsplay.online-play.onlineMulti {
+    display: grid;
+    grid-template-rows: calc(var(--hdrH) + 10px) 1fr 1fr;
+    row-gap: calc(var(--u) * 0.5);
+    align-items: center;
+    justify-content: center;
+    align-content: stretch;
+    padding: 0 calc(var(--u) * 1.2) calc(var(--u) * 0.4);
+  }
+  body.vsplay.online-play.onlineMulti main {
+    grid-column: 1;
+    grid-row: 2/4;
+    align-self: end;
+    zoom: 1;
+    min-height: 0;
+    height: auto;
+  }
+  body.vsplay.online-play.onlineMulti #botArena,
+  body.vsplay.online-play.onlineMulti .arenaExtra {
+    min-height: 0;
+  }
+
+  body.vsplay.online-play.onlineMulti3 {
+    grid-template-columns: auto auto;
+    column-gap: calc(var(--u) * 7);
+  }
+  body.vsplay.online-play.onlineMulti3 #botArena {
+    grid-column: 2;
+    grid-row: 2;
+    zoom: var(--ozS, 0.62);
+    align-self: end;
+    justify-self: start;
+  }
+  body.vsplay.online-play.onlineMulti3 #arena2 {
+    grid-column: 2;
+    grid-row: 3;
+    zoom: var(--ozS, 0.62);
+    align-self: start;
+    justify-self: start;
+  }
+
+  body.vsplay.online-play.onlineMulti4 {
+    grid-template-columns: auto calc(var(--u) * 2) auto auto;
+    column-gap: calc(var(--u) * 1.4);
+  }
+  body.vsplay.online-play.onlineMulti4 #botArena {
+    grid-column: 3;
+    grid-row: 2/4;
+    zoom: var(--ozS, 0.56);
+    align-self: center;
+  }
+  body.vsplay.online-play.onlineMulti4 #arena2 {
+    grid-column: 4;
+    grid-row: 2;
+    zoom: var(--ozS, 0.56);
+    align-self: end;
+  }
+  body.vsplay.online-play.onlineMulti4 #arena3 {
+    grid-column: 4;
+    grid-row: 3;
+    zoom: var(--ozS, 0.56);
+    align-self: start;
+  }
+}
+@media (pointer: fine) {
+  body.vsplay.vsWide .panel {
+    padding: calc(var(--u) * 0.34) calc(var(--u) * 0.31);
+  }
+  body.vsplay.vsWide .panel h3 {
+    font-size: max(6px, calc(var(--u) * 0.36)) !important;
+    letter-spacing: 0.1em;
+  }
+  body.vsplay.vsWide .score-panel .score {
+    font-size: max(9px, calc(var(--u) * 1.19)) !important;
+    height: max(calc(var(--u) * 1.19), 16px) !important;
+    line-height: 1.25 !important;
+  }
+  body.vsplay.vsWide .score-panel .mini .v,
+  body.vsplay.vsWide .score-panel .duo .v {
+    font-size: max(7px, calc(var(--u) * 0.73)) !important;
+    height: max(calc(var(--u) * 0.73), 12px) !important;
+    line-height: 1.25 !important;
+  }
+  body.vsplay.vsWide .score-panel .mini .k,
+  body.vsplay.vsWide .score-panel .duo .k {
+    font-size: max(6px, calc(var(--u) * 0.4)) !important;
+  }
+  body.vsplay.vsWide .trio-panel .trio {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: calc(var(--u) * 0.24);
+    text-align: left !important;
+  }
+  body.vsplay.vsWide .trio-panel .trio > div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: calc(var(--u) * 0.16);
+  }
+  body.vsplay.vsWide .trio-panel .trio .v {
+    order: 2 !important;
+    flex: 0 0 auto;
+    transform: none;
+    line-height: 1.3 !important;
+    height: auto !important;
+    font-size: max(7px, calc(var(--u) * 0.87)) !important;
+  }
+  body.vsplay.vsWide .trio-panel .trio .k {
+    order: 1 !important;
+    margin-top: 0 !important;
+    flex: 0 1 auto;
+    min-width: 0;
+    line-height: 1.25;
+    font-size: max(6px, calc(var(--u) * 0.48)) !important;
+  }
+  body.vsplay.vsWide .action .at {
+    font-size: max(8px, calc(var(--u) * 0.84)) !important;
+  }
+  body.vsplay.vsWide .action .pts {
+    font-size: max(6px, calc(var(--u) * 0.5)) !important;
+  }
+  body.vsplay.vsWide .chip {
+    font-size: max(6px, calc(var(--u) * 0.54)) !important;
+    letter-spacing: 0.06em;
+  }
+}
+@media (pointer: coarse) {
+  body.vsplay.splitMob.vsWide .panel,
+  body.vsplay.mobOnMulti.vsWide main .panel {
+    padding: calc(var(--u) * 0.34) calc(var(--u) * 0.31);
+  }
+  body.vsplay.splitMob.vsWide .panel h3,
+  body.vsplay.mobOnMulti.vsWide main .panel h3 {
+    font-size: max(6px, calc(var(--u) * 0.36)) !important;
+    letter-spacing: 0.1em;
+  }
+  body.vsplay.splitMob.vsWide main .score-panel .score,
+  body.vsplay.splitMob.vsWide #botArena .score-panel .score,
+  body.vsplay.splitMob.vsWide .arenaBot .score-panel .score,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .score {
+    font-size: max(9px, calc(var(--u) * 1.19)) !important;
+    height: max(calc(var(--u) * 1.19), 16px) !important;
+    line-height: 1.25 !important;
+  }
+  body.vsplay.splitMob.vsWide main .score-panel .mini .v,
+  body.vsplay.splitMob.vsWide #botArena .score-panel .mini .v,
+  body.vsplay.splitMob.vsWide .arenaBot .score-panel .mini .v,
+  body.vsplay.splitMob.vsWide main .score-panel .duo .v,
+  body.vsplay.splitMob.vsWide #botArena .score-panel .duo .v,
+  body.vsplay.splitMob.vsWide .arenaBot .score-panel .duo .v,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .mini .v,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .duo .v {
+    font-size: max(7px, calc(var(--u) * 0.73)) !important;
+    height: max(calc(var(--u) * 0.73), 12px) !important;
+    line-height: 1.25 !important;
+  }
+  body.vsplay.splitMob.vsWide main .score-panel .mini .k,
+  body.vsplay.splitMob.vsWide #botArena .score-panel .mini .k,
+  body.vsplay.splitMob.vsWide .arenaBot .score-panel .mini .k,
+  body.vsplay.splitMob.vsWide main .score-panel .duo .k,
+  body.vsplay.splitMob.vsWide #botArena .score-panel .duo .k,
+  body.vsplay.splitMob.vsWide .arenaBot .score-panel .duo .k,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .mini .k,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .duo .k {
+    font-size: max(6px, calc(var(--u) * 0.4)) !important;
+  }
+  body.vsplay.splitMob.vsWide main .trio-panel .trio,
+  body.vsplay.splitMob.vsWide #botArena .trio-panel .trio,
+  body.vsplay.splitMob.vsWide .arenaBot .trio-panel .trio,
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: calc(var(--u) * 0.24);
+    text-align: left !important;
+  }
+  body.vsplay.splitMob.vsWide main .trio-panel .trio > div,
+  body.vsplay.splitMob.vsWide #botArena .trio-panel .trio > div,
+  body.vsplay.splitMob.vsWide .arenaBot .trio-panel .trio > div,
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio > div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: calc(var(--u) * 0.16);
+  }
+  body.vsplay.splitMob.vsWide main .trio-panel .trio .v,
+  body.vsplay.splitMob.vsWide #botArena .trio-panel .trio .v,
+  body.vsplay.splitMob.vsWide .arenaBot .trio-panel .trio .v,
+  body.vsplay.splitMob.vsWide .col-left > .trio-panel .trio .v,
+  body.vsplay.splitMob.vsWide .bot-col-left > .trio-panel .trio .v,
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio .v {
+    order: 2 !important;
+    flex: 0 0 auto;
+    transform: none;
+    line-height: 1.3 !important;
+    height: auto !important;
+    font-size: max(7px, calc(var(--u) * 0.87)) !important;
+  }
+  body.vsplay.splitMob.vsWide main .trio-panel .trio .k,
+  body.vsplay.splitMob.vsWide #botArena .trio-panel .trio .k,
+  body.vsplay.splitMob.vsWide .arenaBot .trio-panel .trio .k,
+  body.vsplay.splitMob.vsWide .col-left > .trio-panel .trio .k,
+  body.vsplay.splitMob.vsWide .bot-col-left > .trio-panel .trio .k,
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio .k {
+    order: 1 !important;
+    margin-top: 0 !important;
+    flex: 0 1 auto;
+    min-width: 0;
+    line-height: 1.25;
+    font-size: max(6px, calc(var(--u) * 0.48)) !important;
+  }
+  body.vsplay.splitMob.vsWide .action .at,
+  body.vsplay.mobOnMulti.vsWide main .action .at {
+    font-size: max(8px, calc(var(--u) * 0.84)) !important;
+  }
+  body.vsplay.splitMob.vsWide .action .pts,
+  body.vsplay.mobOnMulti.vsWide main .action .pts {
+    font-size: max(6px, calc(var(--u) * 0.5)) !important;
+  }
+  body.vsplay.splitMob.vsWide .chip,
+  body.vsplay.mobOnMulti.vsWide main .chip {
+    font-size: max(6px, calc(var(--u) * 0.54)) !important;
+    letter-spacing: 0.06em;
+  }
+  body.vsplay.mobOnMulti.vsWide .arenaBot .trio-panel .trio > div {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: calc(var(--u) * 0.1);
+  }
+  body.vsplay.mobOnMulti.vsWide .arenaBot .trio-panel .trio .v {
+    order: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: max(5px, calc(var(--u) * 0.56)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide .arenaBot .trio-panel .trio .k {
+    order: 2;
+    flex: 0 0 auto;
+    margin-top: 0;
+    font-size: max(4px, calc(var(--u) * 0.27)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide .arenaBot .action .at {
+    font-size: max(6px, calc(var(--u) * 0.8)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide .arenaBot .action .pts {
+    font-size: max(5px, calc(var(--u) * 0.4)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .panel h3 {
+    font-size: max(6px, calc(var(--u) * 0.42)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .score-panel .score {
+    font-size: max(9px, calc(var(--u) * 1.3)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .score-panel .mini .v,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .duo .v {
+    font-size: max(7px, calc(var(--u) * 0.8)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .score-panel .mini .k,
+  body.vsplay.mobOnMulti.vsWide main .score-panel .duo .k {
+    font-size: max(6px, calc(var(--u) * 0.52)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio .v {
+    font-size: max(7px, calc(var(--u) * 0.95)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .trio-panel .trio .k {
+    font-size: max(6px, calc(var(--u) * 0.6)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .action .at {
+    font-size: max(8px, calc(var(--u) * 0.9)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .action .pts {
+    font-size: max(6px, calc(var(--u) * 0.56)) !important;
+  }
+  body.vsplay.mobOnMulti.vsWide main .chip {
+    font-size: max(6px, calc(var(--u) * 0.6)) !important;
+  }
+}

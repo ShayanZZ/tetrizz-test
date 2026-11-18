@@ -1,0 +1,28 @@
+.fpiece {
+  position: fixed;
+  z-index: 7;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: floatLife var(--d, 16s) ease-in-out forwards;
+}
+.fpiece i {
+  position: absolute;
+  border-radius: 3px;
+  background: var(--c);
+}
+@keyframes floatLife {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.92);
+  }
+  14% {
+    opacity: var(--op, 0.1);
+  }
+  86% {
+    opacity: var(--op, 0.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, -26px)) rotate(var(--rot, 8deg)) scale(1.06);
+  }
+}

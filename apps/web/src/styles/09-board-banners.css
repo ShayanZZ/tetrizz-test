@@ -1,0 +1,258 @@
+body.panels-hidden .stage {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.28s ease,
+    visibility 0s linear 0.28s;
+}
+#wrap,
+#botWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.85);
+  transition: box-shadow 0.3s;
+  will-change: transform;
+}
+#wrap::before,
+#botWrap::before,
+.mpWrap::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  box-shadow:
+    0 0 34px -4px rgba(245, 84, 107, 0.6),
+    0 0 14px -2px rgba(245, 84, 107, 0.35);
+  opacity: 0;
+}
+#wrap.danger::before,
+#botWrap.danger::before,
+.mpWrap.danger::before {
+  will-change: opacity;
+  animation: danger 1s ease-in-out infinite;
+}
+@keyframes danger {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+#wrap.lost,
+#botWrap.lost,
+.mpWrap.lost {
+  filter: grayscale(1) brightness(0.5) saturate(0.35);
+  transition: filter 0.55s ease;
+}
+#board,
+#botBoard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--bu) * -3);
+  height: calc(100% + var(--bu) * 3);
+  width: 100%;
+}
+#banner,
+#botBanner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  z-index: 4;
+  text-align: center;
+  pointer-events: none;
+  font:
+    700 min(calc(var(--u) * 0.9), 30px)/1.1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  text-shadow:
+    0 0 34px currentColor,
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+#banner.count,
+#botBanner.count {
+  font-size: min(calc(var(--u) * 2.4), 84px);
+  letter-spacing: 0.08em;
+}
+#banner.round,
+#botBanner.round {
+  font-size: min(calc(var(--u) * 1.1), 32px);
+  letter-spacing: 0.1em;
+}
+#botBanner.round {
+  font-size: calc(var(--bcell, 16px) * 0.95);
+  line-height: 1.05;
+}
+#banner.end,
+#botBanner.end {
+  white-space: nowrap;
+}
+#banner.pc,
+#botBanner.pc {
+  white-space: nowrap;
+  font-size: min(calc(var(--u) * 1.1), 32px);
+  letter-spacing: 0.08em;
+}
+#banner.pc2,
+#botBanner.pc2 {
+  white-space: pre-line;
+  line-height: 1.02;
+  top: 40%;
+}
+#botBanner.pc2 {
+  font-size: calc(var(--bcell, 16px) * 1.7);
+}
+#banner.pc2.go,
+#botBanner.pc2.go {
+  animation: banPC 1.25s ease-out;
+}
+@keyframes banPC {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.82);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  34% {
+    transform: translateY(0) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+#botBanner {
+  font-size: calc(var(--bcell, 16px) * 0.8);
+}
+#botBanner.count {
+  font-size: calc(var(--bcell, 16px) * 2.4);
+  letter-spacing: 0.04em;
+}
+#banner.go,
+#botBanner.go {
+  animation: ban 1.15s ease-out;
+}
+#banner.count.go,
+#botBanner.count.go {
+  animation-duration: 0.95s;
+}
+@keyframes ban {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  16% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  32% {
+    transform: scale(1);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+#goText {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+}
+#goText span {
+  font:
+    700 min(16vw, 18vh, 130px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  text-shadow:
+    0 0 46px currentColor,
+    0 0 12px currentColor,
+    0 5px 0 rgba(0, 0, 0, 0.3);
+}
+#goText.show {
+  animation: goIn 1.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+@keyframes goIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  16% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  28% {
+    transform: scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) translateY(-26px);
+  }
+}
+#restartHold {
+  position: fixed;
+  z-index: 40;
+  height: 8px;
+  display: none;
+  pointer-events: none;
+}
+#restartHold i {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  width: 0%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(94, 22, 32, 0) 0%,
+    #5e1620 6%,
+    #8e2230 50%,
+    #5e1620 94%,
+    rgba(94, 22, 32, 0) 100%
+  );
+  box-shadow:
+    0 0 8px rgba(94, 22, 32, 0.9),
+    0 0 18px rgba(94, 22, 32, 0.6),
+    0 0 32px rgba(94, 22, 32, 0.35);
+  animation: rhPulse 0.45s ease-in-out infinite;
+}
+@keyframes rhPulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+}

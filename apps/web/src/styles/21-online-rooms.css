@@ -1,0 +1,124 @@
+.mc-glyph svg {
+  width: min(9vh, 12vw, 72px);
+  height: min(9vh, 12vw, 72px);
+  display: block;
+  filter: drop-shadow(0 0 min(2.6vh, 22px) var(--mc));
+}
+.online-lobby-box {
+  background: var(--panel-g);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.room-code {
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 34px;
+  letter-spacing: 10px;
+  color: var(--acchi);
+  margin: 12px 0;
+}
+.ol-action-btn {
+  width: min(340px, 86vw);
+  position: relative;
+}
+.ol-action-btn.busy {
+  pointer-events: none;
+  opacity: 0.75;
+}
+.ol-action-btn.busy::after {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 10px;
+  vertical-align: -1px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: currentColor;
+  animation: olspin 0.7s linear infinite;
+}
+@keyframes olspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes rcspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rc-spinner {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: block;
+  animation: rcspin 1s linear infinite;
+}
+.rc-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.ol-note {
+  min-height: 18px;
+  text-align: center;
+  color: var(--acchi);
+}
+.ol-note.err {
+  color: #f5546b;
+}
+.copy-btn,
+.share-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--txt);
+  cursor: pointer;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.copy-btn:hover,
+.share-btn:hover {
+  border-color: var(--acchi);
+  color: var(--acchi);
+}
+.ol-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.online-code-input {
+  flex: 0 0 auto;
+  width: 14ch;
+  text-align: center;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  font-size: 15px;
+}
+.kick-btn,
+.swap-btn {
+  font: 600 10px/1 "IBM Plex Mono";
+  letter-spacing: 0.08em;
+  padding: 6px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--mut2);
+  cursor: pointer;
+  margin-left: 6px;
+}
+.kick-btn:hover {
+  color: #f5546b;
+  border-color: rgba(245, 84, 107, 0.5);
+}
+.swap-btn:hover {
+  color: var(--acchi);
+  border-color: rgba(var(--acchi-rgb), 0.5);
+}

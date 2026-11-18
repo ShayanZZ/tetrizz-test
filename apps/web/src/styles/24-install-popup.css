@@ -1,0 +1,135 @@
+.ipop-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 7, 12, 0.55);
+  transition: opacity 0.25s ease;
+}
+.ipop-wrap.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.ipop {
+  width: min(420px, 94vw);
+  background: var(--panel-g);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  padding: clamp(18px, 4vw, 26px);
+  text-align: center;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7);
+  animation: paneIn 0.22s ease;
+}
+.ipop-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  display: block;
+  background: transparent;
+  box-shadow: 0 8px 24px -8px rgba(21, 28, 66, 0.9);
+}
+.ipop-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ipop-title {
+  font:
+    700 clamp(18px, 4.5vw, 22px)/1.2 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.ipop-title .zz {
+  color: var(--brand-red);
+}
+.ipop-sub {
+  font:
+    500 clamp(12px, 3vw, 13.5px)/1.6 "IBM Plex Mono",
+    monospace;
+  color: var(--mut2);
+  margin-bottom: 16px;
+}
+.ipop-steps {
+  display: none;
+  text-align: left;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  font:
+    500 clamp(12px, 3vw, 13px)/1.7 "IBM Plex Mono",
+    monospace;
+  color: var(--txt);
+}
+.ipop-steps.show {
+  display: block;
+}
+.ipop-steps b {
+  color: var(--acchi);
+}
+.ipop-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.ipop-btn {
+  font:
+    700 clamp(12px, 3vw, 14px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.12em;
+  padding: 13px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.ipop-btn.primary {
+  border: none;
+  color: #e8edff;
+  background: linear-gradient(180deg, var(--brand-blue), var(--brand-blue-deep));
+  box-shadow: 0 10px 26px -10px rgba(var(--acc-rgb), 0.8);
+}
+@media (pointer: fine) {
+  .ipop-btn.primary:hover {
+    transform: translateY(-2px);
+  }
+}
+.drop-zone {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(6, 9, 16, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.drop-zone.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drop-zone-inner {
+  border: 3px dashed var(--acchi);
+  border-radius: 24px;
+  padding: 40px 60px;
+  font: 700 24px/1 "Chakra Petch";
+  color: var(--acchi);
+  letter-spacing: 0.1em;
+}
+@media (pointer: coarse) {
+  .cap-desktop {
+    display: none !important;
+  }
+}
+@media (pointer: fine) {
+  .cap-mobile {
+    display: none !important;
+  }
+}

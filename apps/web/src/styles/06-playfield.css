@@ -1,0 +1,203 @@
+main {
+  position: relative;
+  z-index: 1;
+  height: var(--dvh, 100vh);
+  display: grid;
+  grid-template-columns: var(--side) var(--boardW) var(--side);
+  grid-template-rows: auto;
+  gap: var(--gap);
+  padding: calc(var(--hdrH) + var(--u) * 3 + 6px) 14px calc(18px + var(--barH, 0px));
+  align-items: stretch;
+  align-content: center;
+  justify-content: center;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.32);
+  justify-content: flex-start;
+  min-height: 0;
+  min-width: 0;
+  overflow: visible;
+}
+.col {
+  transition:
+    opacity 0.28s ease,
+    visibility 0s;
+}
+.spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.panel {
+  background: var(--panel-g);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--u) * 0.36);
+  padding: calc(var(--u) * 0.34) calc(var(--u) * 0.3);
+  min-width: 0;
+}
+:root[data-theme="dark"] .panel {
+  background: linear-gradient(180deg, #1d2637, #151d2d);
+}
+.panel h3 {
+  font: 600 min(calc(var(--u) * 0.34), 11px)/1 "IBM Plex Mono";
+  letter-spacing: 0.24em;
+  color: var(--mut2);
+  text-transform: uppercase;
+  margin-bottom: calc(var(--u) * 0.28);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.22);
+}
+.panel h3::before {
+  content: "";
+  width: calc(var(--u) * 0.16);
+  height: calc(var(--u) * 0.16);
+  border-radius: 2px;
+  background: var(--acchi);
+  box-shadow: 0 0 8px var(--acchi);
+}
+.panel h3::before {
+  width: max(4px, calc(var(--u) * 0.24));
+  height: max(4px, calc(var(--u) * 0.24));
+}
+canvas {
+  display: block;
+  width: 100%;
+}
+#holdCv,
+#botHold {
+  transition:
+    filter 0.2s,
+    opacity 0.2s;
+}
+#holdCv.used,
+#botHold.used {
+  filter: grayscale(0.7);
+  opacity: 0.4;
+}
+.next-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.nextList {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.26);
+  margin-top: calc(var(--u) * 0.06);
+}
+.nextItem {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nextItem canvas {
+  width: 100%;
+  height: 100%;
+}
+.nextItem {
+  opacity: 1;
+}
+.ping-panel {
+  padding: calc(var(--u) * 0.34) calc(var(--u) * 0.3);
+  min-width: 0;
+}
+.ping-panel h3 {
+  font: 600 min(calc(var(--u) * 0.34), 11px)/1 "IBM Plex Mono";
+  letter-spacing: 0.24em;
+  color: var(--mut2);
+  text-transform: uppercase;
+  margin-bottom: calc(var(--u) * 0.28);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.22);
+}
+.ping-panel h3::before {
+  content: "";
+  width: max(4px, calc(var(--u) * 0.24));
+  height: max(4px, calc(var(--u) * 0.24));
+  border-radius: 2px;
+  background: var(--acchi);
+  box-shadow: 0 0 8px var(--acchi);
+}
+.ping-val {
+  font:
+    700 min(calc(var(--u) * 0.85), 26px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  text-align: center;
+}
+main .ping-panel {
+  display: none !important;
+}
+body.vsplay .arenaBot .bot-col-right {
+  min-height: 0;
+}
+body.vsplay .arenaBot .ping-panel {
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+@media (pointer: fine) {
+  body.vsplay .arenaBot .next-panel {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+  }
+}
+@media (pointer: coarse) {
+  body.vsplay .arenaBot .next-panel {
+    height: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+  body.vsplay .arenaBot .ping-panel {
+    padding: calc(var(--u) * 0.24) calc(var(--u) * 0.22);
+  }
+  body.vsplay .arenaBot .ping-panel h3 {
+    font-size: max(4px, calc(var(--u) * 0.26));
+    letter-spacing: 0.1em;
+    margin-bottom: calc(var(--u) * 0.16);
+  }
+  body.vsplay .arenaBot .ping-val {
+    font-size: max(8px, calc(var(--u) * 0.7));
+  }
+}
+.ping-good {
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(79, 224, 138, 0.4);
+}
+.ping-mid {
+  color: var(--gold);
+  text-shadow: 0 0 12px rgba(255, 210, 63, 0.4);
+}
+.ping-bad {
+  color: #ff9f43;
+  text-shadow: 0 0 12px rgba(255, 159, 67, 0.4);
+}
+.ping-bad2 {
+  color: var(--red);
+  text-shadow: 0 0 12px rgba(245, 84, 107, 0.4);
+}
+.mpc-ping.ping-good {
+  color: var(--green);
+}
+.mpc-ping.ping-mid {
+  color: var(--gold);
+}
+.mpc-ping.ping-bad {
+  color: #ff9f43;
+}
+.mpc-ping.ping-bad2 {
+  color: #f5546b;
+}
+body:not(.online-play) .ping-panel {
+  display: none;
+}
+body.online-spec .ping-panel,
+body.online-spec .bot-level {
+  display: none !important;
+}

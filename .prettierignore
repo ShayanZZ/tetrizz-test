@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-single
+coverage
+package-lock.json
+legacy
+tests/golden
+tests/fixtures
+tests/harness
+docs/PLAN.md
+apps/web/public/manifest.json

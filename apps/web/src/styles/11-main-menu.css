@@ -1,0 +1,478 @@
+.mm-continue {
+  width: min(700px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font:
+    700 min(2.6vh, 4.2vw, 18px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.2em;
+  padding: min(2.6vh, 22px) 22px;
+  border-radius: min(1.9vh, 14px);
+  border: 1px solid rgba(79, 224, 138, 0.45);
+  background: linear-gradient(180deg, rgba(79, 224, 138, 0.13), rgba(79, 224, 138, 0.04));
+  color: var(--green);
+  cursor: pointer;
+  transition:
+    transform 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s;
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+:root[data-theme="light"] .mm-continue {
+  color: #17603a;
+  border-color: rgba(23, 96, 58, 0.55);
+  background: linear-gradient(180deg, rgba(23, 96, 58, 0.16), rgba(23, 96, 58, 0.06));
+  text-shadow: none;
+}
+@media (pointer: fine) {
+  :root[data-theme="light"] .mm-continue:hover {
+    border-color: rgba(23, 96, 58, 0.85);
+    box-shadow:
+      0 0 0 1px rgba(23, 96, 58, 0.35),
+      0 14px 30px -14px rgba(23, 96, 58, 0.5);
+  }
+}
+.mm-continue svg {
+  width: 1.05em;
+  height: 1.05em;
+  flex: 0 0 auto;
+}
+@media (pointer: fine) {
+  .mm-continue:hover {
+    border-color: rgba(79, 224, 138, 0.85);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px rgba(79, 224, 138, 0.35),
+      0 14px 30px -14px rgba(79, 224, 138, 0.7);
+  }
+}
+.mm-continue:active {
+  transform: scale(0.98);
+}
+.mm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: min(2vh, 18px);
+  width: min(700px, 100%);
+}
+.mm-grid-sm {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: min(1.4vh, 12px);
+}
+.mm-grid-md {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mm-grid-md .mm-card:nth-child(1) {
+  animation-delay: 0.13s;
+}
+.mm-grid-md .mm-card:nth-child(2) {
+  animation-delay: 0.17s;
+}
+.mm-grid-md .mm-card:nth-child(3) {
+  animation-delay: 0.21s;
+}
+@media (max-width: 540px) {
+  .mm-grid-sm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.mm-card {
+  --mc: var(--acchi);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(1.5vh, 13px);
+  padding: min(4.4vh, 40px) min(2.6vw, 24px) min(3.6vh, 32px);
+  border-radius: min(2.4vh, 18px);
+  border: 1px solid var(--line);
+  background: var(--panel-g);
+  cursor: pointer;
+  transition:
+    transform 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s;
+  color: var(--txt);
+  font-family: "IBM Plex Mono", monospace;
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+.mm-grid .mm-card:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.mm-grid .mm-card:nth-child(2) {
+  animation-delay: 0.09s;
+}
+.mm-grid-sm .mm-card:nth-child(1) {
+  animation-delay: 0.13s;
+}
+.mm-grid-sm .mm-card:nth-child(2) {
+  animation-delay: 0.17s;
+}
+.mm-grid-sm .mm-card:nth-child(3) {
+  animation-delay: 0.21s;
+}
+.mm-grid-sm .mm-card:nth-child(4) {
+  animation-delay: 0.25s;
+}
+@media (pointer: fine) {
+  .mm-card:hover {
+    border-color: var(--mc);
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 1px var(--mc),
+      0 16px 40px -16px var(--mc);
+  }
+  .mm-card:hover .mm-icon {
+    transform: scale(1.08);
+  }
+}
+.mm-card:active {
+  transform: scale(0.97);
+}
+.mm-icon {
+  width: min(8vh, 13vw, 60px);
+  height: min(8vh, 13vw, 60px);
+  display: grid;
+  place-items: center;
+  border-radius: 28%;
+  color: var(--mc);
+  background: var(--chip-bg);
+  background: color-mix(in srgb, var(--mc) 12%, transparent);
+  border: 1px solid var(--line);
+  border-color: color-mix(in srgb, var(--mc) 38%, transparent);
+  transition: transform 0.16s;
+}
+.mm-icon svg {
+  width: 62%;
+  height: 62%;
+  display: block;
+  filter: drop-shadow(0 0 min(1.2vh, 10px) var(--mc));
+}
+.mm-label {
+  font:
+    700 min(3.6vh, 5.6vw, 26px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .mm-label {
+    font-size: min(2.9vh, 4.6vw, 17px);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .mm-mini .mm-label {
+    font-size: min(2vh, 3.4vw, 13px);
+    letter-spacing: 0.1em;
+  }
+}
+.mm-mini {
+  padding: min(2.9vh, 24px) min(1.2vw, 12px) min(2.3vh, 20px);
+  gap: min(1.1vh, 9px);
+}
+.mm-mini .mm-icon {
+  width: min(6vh, 10vw, 44px);
+  height: min(6vh, 10vw, 44px);
+  border-radius: 30%;
+}
+.mm-br {
+  display: none;
+}
+@media (pointer: coarse) {
+  .mm-br {
+    display: inline;
+  }
+  .mm-single .mm-label,
+  .mm-multi .mm-label {
+    display: block;
+    white-space: normal;
+    line-height: 1.08;
+    min-height: 2.16em;
+    text-align: center;
+  }
+}
+.mm-mini .mm-label {
+  font-size: min(1.8vh, 3vw, 14px);
+  letter-spacing: 0.12em;
+}
+.mm-single {
+  --mc: #4257b8;
+}
+.mm-multi {
+  --mc: #c23a55;
+}
+.mm-options {
+  --mc: #7a52bd;
+}
+.mm-controls {
+  --mc: #2a93a8;
+}
+.mm-scores {
+  --mc: #b89a2e;
+}
+.mm-replays {
+  --mc: #2f9468;
+}
+.mm-restart {
+  --mc: #e0862e;
+}
+.mm-home {
+  --mc: #c23a55;
+}
+.mm-practice {
+  --mc: #b89a2e;
+}
+.mm-vsset {
+  --mc: #4257b8;
+}
+.over-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(700px, 100%);
+  margin-top: min(2.2vh, 18px);
+}
+body.matchover .over-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body.online-play.matchover .over-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+body.online-spec.matchover .over-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body.online-spec #saveReplayBtn {
+  display: none !important;
+}
+body.online-spec.matchover .over-grid .mm-card {
+  padding: min(4.4vh, 40px) min(2.6vw, 24px) min(3.6vh, 32px);
+  gap: min(1.5vh, 13px);
+}
+body.online-spec.matchover .over-grid .mm-icon {
+  width: min(8vh, 13vw, 60px);
+  height: min(8vh, 13vw, 60px);
+  border-radius: 28%;
+}
+body.online-spec.matchover .over-grid .mm-label {
+  font-size: min(3.6vh, 5.6vw, 26px);
+  letter-spacing: 0.18em;
+}
+#ovPause .mm-card,
+#ovPause .mm-continue,
+#ovOver .mm-card,
+#ovOnlinePause .mm-card,
+#ovOnlinePause .mm-continue {
+  animation: none;
+}
+#ovPause:not(.hidden) .mm-card,
+#ovPause:not(.hidden) .mm-continue,
+#ovOver:not(.hidden) .mm-card,
+#ovOnlinePause:not(.hidden) .mm-card,
+#ovOnlinePause:not(.hidden) .mm-continue {
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+#ovOnlinePause:not(.hidden) .mm-grid .mm-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+#ovOnlinePause:not(.hidden) .mm-grid .mm-card:nth-child(2) {
+  animation-delay: 0.09s;
+}
+#ovOnlinePause:not(.hidden) .op-row .mm-card:nth-child(3) {
+  animation-delay: 0.13s;
+}
+#ovOnlinePause:not(.hidden) .op-row .mm-card:nth-child(4) {
+  animation-delay: 0.17s;
+}
+#ovOnlinePause {
+  background: rgba(5, 9, 16, 0.36) !important;
+  -webkit-backdrop-filter: blur(2px) saturate(0.96);
+  backdrop-filter: blur(2px) saturate(0.96);
+}
+#ovOnlinePause .menu-full {
+  background: rgba(10, 16, 26, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.26) !important;
+}
+#ovOnlinePause .menu-scroll,
+#ovOnlinePause .menu-screen,
+#ovOnlinePause .main-body {
+  background: transparent !important;
+}
+#ovOnlinePause .op-row {
+  display: grid !important;
+  gap: min(1.5vh, 12px);
+  width: 100%;
+  max-width: min(94vw, 860px);
+  margin: min(1.2vh, 10px) auto 0;
+  align-items: stretch;
+}
+#ovOnlinePause .op-row .mm-card {
+  min-width: 0;
+  padding: min(2.9vh, 24px) min(1.2vw, 12px) min(2.3vh, 20px);
+  gap: min(1.1vh, 9px);
+}
+#ovOnlinePause .op-row .mm-icon {
+  width: min(6vh, 10vw, 44px);
+  height: min(6vh, 10vw, 44px);
+  border-radius: 30%;
+}
+#ovOnlinePause .op-row .mm-label {
+  font-size: min(1.8vh, 3vw, 14px);
+  letter-spacing: 0.12em;
+  line-height: 1.05;
+}
+@media (pointer: coarse) {
+  #ovOnlinePause .op-row {
+    gap: 8px;
+  }
+  #ovOnlinePause .op-row .mm-icon {
+    width: min(4.8vh, 8vw, 34px);
+    height: min(4.8vh, 8vw, 34px);
+  }
+  #ovOnlinePause .op-row .mm-label {
+    font-size: max(9px, min(2.1vh, 3.2vw, 13px));
+    line-height: 1.05;
+  }
+}
+#ovPause:not(.hidden) .mm-grid > .mm-card:nth-child(1),
+#ovOver:not(.hidden) .over-grid > .mm-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+#ovPause:not(.hidden) .mm-grid > .mm-card:nth-child(2),
+#ovOver:not(.hidden) .over-grid > .mm-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+#ovOver:not(.hidden) .over-grid > .mm-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+#ovOver:not(.hidden) .over-grid > .mm-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+#ovOver:not(.hidden) .over-grid > .mm-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
+#ovPause:not(.hidden) .mm-grid-md > .mm-card:nth-child(1),
+#ovOver:not(.hidden) .mm-grid-md > .mm-card:nth-child(1) {
+  animation-delay: 0.16s;
+}
+#ovPause:not(.hidden) .mm-grid-md > .mm-card:nth-child(2),
+#ovOver:not(.hidden) .mm-grid-md > .mm-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+#ovPause:not(.hidden) .mm-grid-md > .mm-card:nth-child(3),
+#ovOver:not(.hidden) .mm-grid-md > .mm-card:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.mm-bar {
+  --mc: var(--acchi);
+  width: min(700px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font:
+    700 min(2vh, 3.2vw, 14px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.18em;
+  padding: min(1.9vh, 15px) 18px;
+  border-radius: min(1.6vh, 12px);
+  border: 1px solid var(--line);
+  background: var(--panel-g);
+  color: var(--txt);
+  cursor: pointer;
+  transition:
+    transform 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s;
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+@media (pointer: fine) {
+  .mm-bar:hover {
+    border-color: var(--mc);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px var(--mc),
+      0 12px 28px -16px var(--mc);
+  }
+}
+.mm-bar:active {
+  transform: scale(0.98);
+}
+.mm-bar-ic {
+  width: 1.5em;
+  height: 1.5em;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--mc);
+}
+.mm-bar-ic svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 0 8px var(--mc));
+}
+.mm-bar-practice {
+  --mc: #2f9468;
+}
+.mm-bar-lobby {
+  --mc: #4257b8;
+}
+.mm-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    600 min(1.6vh, 2.6vw, 11px)/1 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.18em;
+  color: var(--mut2);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  padding: min(1.5vh, 12px) min(3.4vw, 24px);
+  cursor: pointer;
+  transition: 0.16s;
+  margin-top: min(0.4vh, 4px);
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) 0.3s backwards;
+}
+.mm-install svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 auto;
+}
+@media (pointer: fine) {
+  .mm-install:hover {
+    color: var(--acchi);
+    border-color: rgba(var(--acchi-rgb), 0.55);
+    transform: translateY(-1px);
+  }
+}
+@keyframes mmIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (max-height: 620px) {
+  .m-hero {
+    margin-top: -14px;
+    margin-bottom: 8px;
+  }
+  .mm-card {
+    padding: min(1.8vh, 14px) 8px min(1.4vh, 12px);
+    gap: 6px;
+  }
+}
+
+.mm-version {
+  padding: 0 0 6px;
+  font:
+    500 10px/1.2 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--mut2);
+  opacity: 0.7;
+  user-select: none;
+}

@@ -1,0 +1,254 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  background: var(--overlay-bg);
+  --mtxt: #fff;
+  --mdim: rgba(255, 255, 255, 0.66);
+  transition: opacity 0.28s ease;
+}
+:root[data-theme="light"] .overlay {
+  --mtxt: #182338;
+  --mdim: rgba(24, 35, 56, 0.66);
+}
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.overlay .step .lb,
+.overlay .step b,
+.overlay .bindrow .bl,
+.overlay .bchip {
+  color: var(--mtxt);
+}
+.overlay .step .u,
+.overlay .dev-note,
+.overlay .m-best {
+  color: var(--mdim);
+}
+.overlay .m-best {
+  font:
+    600 min(2.1vh, 3.6vw, 15px)/1.4 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.overlay .m-best .nb {
+  color: var(--gold);
+  margin-left: 8px;
+  letter-spacing: 0.14em;
+}
+.menu-full {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: calc(var(--hdrH) + min(1.6vh, 10px));
+}
+.menu-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--acchi-rgb), 0.4) transparent;
+}
+.menu-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.menu-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--acchi-rgb), 0.35);
+  border-radius: 8px;
+}
+.menu-screen {
+  display: none;
+  flex-direction: column;
+  min-height: 100%;
+}
+.menu-screen.active {
+  display: flex;
+  animation: paneIn 0.2s ease;
+}
+@keyframes paneIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.main-body {
+  padding: min(2.4vh, 20px) 5vw min(4vh, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(1.9vh, 14px);
+  flex: 1 1 auto;
+  justify-content: safe center;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+}
+#ovStart .main-body {
+  justify-content: flex-start;
+  padding-top: min(2.2vh, 18px);
+  gap: min(1.2vh, 9px);
+}
+.m-title {
+  font:
+    700 min(10vh, 15vw, 96px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--logo-blue);
+  text-shadow: none;
+}
+.m-title .zz {
+  color: var(--brand-red);
+  text-shadow: 0 0 min(3vh, 28px) rgba(223, 32, 32, 0.5);
+}
+.m-title {
+  color: var(--logo-blue);
+}
+.menu-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(1.7vh, 13px);
+  width: 100%;
+  margin-top: min(1.8vh, 14px);
+}
+.m-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(1.1vh, 9px);
+  margin-top: min(-3.4vh, -26px);
+  margin-bottom: min(5vh, 40px);
+  animation: mmIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+#ovStart .m-hero {
+  margin-top: min(-1.2vh, -9px);
+  margin-bottom: min(1.4vh, 11px);
+}
+#ovStart .m-hero .m-title {
+  min-height: calc(min(88vw, 680px) / 2);
+}
+@media (pointer: fine) {
+  #ovStart .m-hero .m-title {
+    min-height: calc(min(42vw, 520px) / 2);
+  }
+}
+#ovOver .m-hero,
+#ovPause .m-hero,
+#ovOnlinePause .m-hero {
+  margin-top: 0;
+  margin-bottom: min(2vh, 16px);
+}
+#ovPause .mm-continue,
+#ovOnlinePause .mm-continue {
+  width: 100% !important;
+  max-width: min(94vw, 860px) !important;
+  margin: 0 auto min(1.4vh, 12px) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#ovPause .mm-grid,
+#ovOnlinePause .mm-grid,
+#ovPause .mm-bar,
+#ovOnlinePause .mm-bar {
+  width: 100% !important;
+  max-width: min(94vw, 860px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+#ovOnlinePause .op-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: min(1.5vh, 12px) !important;
+  width: 100% !important;
+  max-width: min(94vw, 860px) !important;
+  margin: min(1.2vh, 10px) auto 0 !important;
+  align-items: stretch !important;
+}
+#ovOnlinePause.with-lobby .op-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+#ovOnlinePause .op-row .mm-card {
+  min-width: 0 !important;
+}
+#ovOnlinePause .op-row #onlinePauseLobbyBtn {
+  display: none !important;
+}
+#ovOnlinePause.with-lobby .op-row #onlinePauseLobbyBtn {
+  display: flex !important;
+}
+@media (pointer: coarse) {
+  #ovOnlinePause .main-body {
+    gap: min(1.6vh, 14px);
+    padding-top: min(2.4vh, 18px);
+  }
+  #ovOnlinePause .m-hero {
+    margin-bottom: min(2vh, 14px);
+  }
+  #ovOnlinePause .op-row {
+    gap: 8px !important;
+  }
+  #ovOnlinePause:not(.with-lobby) .op-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  #ovOnlinePause.with-lobby .op-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-areas: "options controls" "lobby leave" !important;
+  }
+  #ovOnlinePause.with-lobby .op-row .mm-options,
+  #ovOnlinePause.with-lobby .op-row [data-nav="options"] {
+    grid-area: options;
+  }
+  #ovOnlinePause.with-lobby .op-row .mm-controls,
+  #ovOnlinePause.with-lobby .op-row [data-nav="controls"] {
+    grid-area: controls;
+  }
+  #ovOnlinePause.with-lobby .op-row #onlinePauseLeaveBtn {
+    grid-area: leave;
+  }
+  #ovOnlinePause.with-lobby .op-row #onlinePauseLobbyBtn {
+    grid-area: lobby;
+    display: flex !important;
+  }
+  #ovOnlinePause .op-row .mm-icon {
+    width: min(4.8vh, 8vw, 34px) !important;
+    height: min(4.8vh, 8vw, 34px) !important;
+  }
+  #ovOnlinePause .op-row .mm-label {
+    font-size: max(9px, min(2.1vh, 3.2vw, 13px)) !important;
+    line-height: 1.05 !important;
+  }
+}
+.m-hero .m-title {
+  font-size: min(8.8vh, 13.5vw, 86px);
+}
+.m-title .m-logo-cv {
+  width: min(88vw, 680px);
+  height: auto;
+  aspect-ratio: 2/1;
+  display: block;
+  margin: 0 auto;
+}
+@media (pointer: fine) {
+  .m-title .m-logo-cv {
+    width: min(42vw, 520px);
+  }
+}
+#ovStart .m-hero .m-title {
+  visibility: hidden;
+}
+#ovStart .m-hero .m-title.logo-on {
+  visibility: visible;
+}

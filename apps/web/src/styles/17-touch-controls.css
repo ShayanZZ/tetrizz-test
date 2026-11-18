@@ -1,0 +1,258 @@
+.touch-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.touch-edit-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  color: var(--txt);
+  cursor: pointer;
+  transition: 0.12s;
+  font:
+    700 clamp(10px, 3vw, 13px)/1 "Chakra Petch",
+    sans-serif;
+}
+.touch-edit-btn svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+.touch-edit-btn .te-label {
+  font: 600 min(1.5vh, 2.6vw, 9px)/1 "IBM Plex Mono";
+  color: var(--mut2);
+}
+.touch-edit-btn.sel {
+  border-color: var(--acchi);
+  box-shadow: 0 0 0 1px var(--acchi);
+  background: rgba(var(--acchi-rgb), 0.12);
+}
+@media (pointer: coarse) {
+  .touch-edit-btn {
+    height: 60px;
+  }
+}
+.tp-saverow {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tp-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--txt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: 600 13px/1 "IBM Plex Mono";
+  text-transform: uppercase;
+  outline: none;
+}
+.tp-save {
+  font:
+    700 12px/1 "Chakra Petch",
+    sans-serif;
+  color: #e8edff;
+  background: linear-gradient(180deg, var(--brand-blue), var(--brand-blue-deep));
+  border: none;
+  border-radius: 8px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+.touch-preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.tp-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  overflow: hidden;
+}
+.tp-chip .tp-apply {
+  border: none;
+  background: transparent;
+  color: var(--txt);
+  cursor: pointer;
+  font:
+    700 13px/1 "Chakra Petch",
+    sans-serif;
+  padding: 12px 16px;
+  min-width: 84px;
+}
+.tp-chip .tp-del {
+  border: none;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--mut);
+  cursor: pointer;
+  font: 600 15px/1 "IBM Plex Mono";
+  padding: 0 13px;
+  min-width: 42px;
+}
+.tp-empty {
+  font: 500 12px/1.4 "IBM Plex Mono";
+  color: var(--mut);
+}
+button:focus {
+  outline: none;
+}
+.cf-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 7, 12, 0.6);
+}
+.cf-modal[hidden] {
+  display: none;
+}
+.cf-box {
+  width: min(460px, 94vw);
+  background: var(--cf-g);
+  border: 1px solid rgba(66, 87, 184, 0.7);
+  border-radius: 16px;
+  padding: clamp(22px, 5vw, 30px);
+  text-align: center;
+}
+.cf-text {
+  font: 500 clamp(14px, 3.6vw, 16.5px)/1.55 "IBM Plex Mono";
+  color: var(--cf-text);
+  margin-bottom: clamp(16px, 4vw, 22px);
+}
+.cf-text b {
+  color: var(--txt);
+}
+.cf-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.cf-btn {
+  font: 700 clamp(12px, 3vw, 14px)/1 "IBM Plex Mono";
+  padding: clamp(12px, 3vw, 15px) clamp(16px, 4vw, 22px);
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--txt);
+}
+.cf-btn[data-cf="ok"] {
+  border-color: rgba(66, 87, 184, 0.75);
+  color: #8fa3ec;
+  background: rgba(66, 87, 184, 0.14);
+}
+.piece-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(8px, 2.4vw, 12px);
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+.piece-btn {
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip-bg);
+  cursor: pointer;
+  padding: 5px;
+  display: grid;
+  place-items: center;
+}
+.piece-btn canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(300px, 80vw);
+  background: #0e1526;
+  color: #dfe7f3;
+  border: 1px solid rgba(66, 87, 184, 0.65);
+  border-radius: 10px;
+  padding: 10px 13px;
+  font: 500 12.5px/1.5 "IBM Plex Mono";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+  transform: translate(-50%, -100%);
+  text-align: center;
+}
+#tip.on {
+  opacity: 1;
+}
+#touch {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--touch-bg);
+}
+#touch.touchTop {
+  top: var(--hdrH);
+  bottom: auto;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
+}
+#touch2 {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  z-index: 10;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, var(--t3), var(--t2) 34%, var(--t1));
+}
+.tbtn {
+  height: var(--btnH);
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--tbtn-bg);
+  color: var(--txt);
+  font:
+    700 clamp(12px, 3.4vw, 17px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.03em;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    background 0.08s,
+    transform 0.08s;
+}
+.tbtn svg {
+  width: 42%;
+  height: 42%;
+  display: block;
+}
+.tbtn:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.96);
+}

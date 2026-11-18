@@ -1,0 +1,1255 @@
+@media (pointer: coarse) {
+  body.vsplay {
+    flex-direction: column;
+    gap: 0;
+    --u: max(
+      0px,
+      min(
+        37px,
+        min(
+          calc((var(--dvh, 100vh) - 18px - var(--barH)) / var(--vdiv)),
+          calc((100vw - 16px) / 17.8)
+        )
+      )
+    );
+  }
+  body.vsplay main {
+    position: static;
+    flex: none;
+    width: auto;
+    padding: calc(var(--hdrH) + var(--u) * 3 + 4px) 8px var(--barH);
+    justify-content: center;
+    align-content: flex-start;
+  }
+  body.vsplay:not(.splitMob) .col-left {
+    padding-top: calc(var(--u) * 3.4 + 12px);
+  }
+  body.vsplay #botArena,
+  body.vsplay .arenaBot {
+    position: fixed;
+    left: 8px;
+    top: calc(var(--hdrH) + 6px);
+    right: auto;
+    bottom: auto;
+    width: var(--side);
+    height: auto;
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    align-content: start;
+    justify-content: start;
+  }
+  body.vsplay .arenaBot .col {
+    display: none;
+  }
+  body.vsplay .arenaBot .bot-stage {
+    display: flex;
+    height: auto;
+    align-self: auto;
+  }
+  body.vsplay.splitMob #gB,
+  body.vsplay.splitMob .arenaBot .vgs {
+    display: block;
+  }
+
+  body.vsplay.mobOnMulti {
+    flex-direction: column;
+    gap: 0;
+  }
+  body.vsplay.mobOnMulti main {
+    position: static;
+    flex: none;
+    width: auto;
+    justify-content: center;
+    align-content: flex-start;
+    padding-top: var(--mobTop, calc(var(--hdrH) + var(--u) * 3 + 4px));
+  }
+  body.vsplay.mobOnMulti .col-left {
+    padding-top: 0;
+  }
+
+  body.vsplay.mobOnMulti .col-right .next-panel {
+    height: var(--boardH);
+    display: flex;
+    flex-direction: column;
+  }
+  body.vsplay.mobOnMulti .col-right .nextList {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  body.vsplay.mobOnMulti .col-right .nextItem {
+    height: auto !important;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  body.vsplay.mobOnMulti #botArena,
+  body.vsplay.mobOnMulti .arenaBot {
+    position: fixed;
+    display: grid;
+    grid-template-columns: var(--side) var(--boardW);
+    gap: var(--gap);
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    align-content: center;
+    justify-content: start;
+    align-items: stretch;
+  }
+  body.vsplay.mobOnMulti.mobOppNext #botArena,
+  body.vsplay.mobOnMulti.mobOppNext .arenaBot {
+    grid-template-columns: var(--side) var(--boardW) var(--side);
+  }
+  body.vsplay.mobOnMulti .arenaBot .col {
+    display: none;
+  }
+  body.vsplay.mobOnMulti .arenaBot .bot-col-left {
+    display: flex;
+    gap: calc(var(--u) * 0.16);
+    padding-top: 0;
+    overflow: hidden;
+  }
+  body.vsplay.mobOnMulti.mobOppNext .arenaBot .bot-col-right {
+    display: flex;
+  }
+  body.vsplay.mobOnMulti .arenaBot .bot-stage {
+    display: flex;
+    height: var(--boardH);
+    align-self: center;
+  }
+  body.vsplay.mobOnMulti .arenaBot .vgauge {
+    width: calc(var(--bcell, 16px) * 0.42);
+    left: calc(var(--bcell, 16px) * -0.62);
+  }
+
+  body.vsplay.mobOnMulti .arenaBot .panel {
+    padding: calc(var(--u) * 0.24) calc(var(--u) * 0.22);
+  }
+  body.vsplay.mobOnMulti .arenaBot .panel h3 {
+    font-size: max(4px, calc(var(--u) * 0.26)) !important;
+    letter-spacing: 0.1em;
+  }
+  body.vsplay.mobOnMulti .arenaBot .panel h3::before {
+    width: max(3px, calc(var(--u) * 0.18));
+    height: max(3px, calc(var(--u) * 0.18));
+  }
+  body.vsplay.mobOnMulti .arenaBot .score-panel .score {
+    font-size: max(6px, calc(var(--u) * 0.85)) !important;
+    height: auto !important;
+  }
+  body.vsplay.mobOnMulti .arenaBot .score-panel .mini .v {
+    font-size: max(5px, calc(var(--u) * 0.52)) !important;
+    height: auto !important;
+  }
+  body.vsplay.mobOnMulti .arenaBot .score-panel .mini .k {
+    font-size: max(4px, calc(var(--u) * 0.24)) !important;
+  }
+  body.vsplay.mobOnMulti .arenaBot .action .at {
+    font-size: max(6px, calc(var(--u) * 0.6)) !important;
+    letter-spacing: 0.06em;
+  }
+  body.vsplay.mobOnMulti .arenaBot .action .pts {
+    font-size: max(5px, calc(var(--u) * 0.32)) !important;
+  }
+  body.vsplay.mobOnMulti .arenaBot .chip {
+    font-size: max(5px, calc(var(--u) * 0.34));
+    letter-spacing: 0.06em;
+    padding: calc(var(--u) * 0.08) calc(var(--u) * 0.16);
+  }
+  body.vsplay.mobOnMulti .arenaBot .chips {
+    height: calc(var(--u) * 1);
+    gap: calc(var(--u) * 0.12);
+  }
+  body.vsplay.mobOnMulti .arenaBot .next-panel {
+    height: var(--boardH);
+    display: flex;
+    flex-direction: column;
+  }
+  body.vsplay.mobOnMulti .arenaBot .nextList {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  body.vsplay.mobOnMulti .arenaBot .nextItem {
+    height: auto !important;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  body.vsplay.mobOnMulti .trio-panel {
+    padding: calc(var(--u) * 0.3) calc(var(--u) * 0.26) calc(var(--u) * 0.4);
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: calc(var(--u) * 0.24);
+    text-align: left;
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--u) * 0.16);
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio .v {
+    order: 2;
+    flex: 0 0 auto;
+    transform: none;
+    line-height: 1.25 !important;
+    height: auto !important;
+    font-size: max(6px, calc(var(--u) * 0.62)) !important;
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio .k {
+    order: 1;
+    margin-top: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    line-height: 1.25;
+    font-size: max(5px, calc(var(--u) * 0.3)) !important;
+    letter-spacing: 0.05em;
+  }
+
+  body.vsplay.mobOnMulti.mobHudLeft #vsHud {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  body.vsplay.mobOnMulti.mobHudLeft #vsHud .mp-chips {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  body.vsplay.mobOnMulti.mobHudLeft #vsHud .mpc {
+    justify-content: space-between;
+  }
+
+  body.vsplay.mobOnMulti .trio-panel .trio .v {
+    transform: none;
+    line-height: 1.3 !important;
+    height: auto !important;
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio .k {
+    transform: none;
+    line-height: 1.3;
+  }
+  body.vsplay.mobOnMulti .trio-panel .trio > div {
+    align-items: center !important;
+    gap: calc(var(--u) * 0.16);
+  }
+  body.vsplay.mobOnMulti .score-panel .mini .v {
+    line-height: 1.25 !important;
+  }
+  body.vsplay.mobOnMulti .score-panel .score {
+    line-height: 1.25 !important;
+  }
+
+  body.vsplay:not(.splitMob):not(.mobOnMulti) #botArena .vgauge {
+    width: calc(var(--bcell, 16px) * 0.42);
+    left: calc(var(--bcell, 16px) * -0.62);
+  }
+  body.onlinePaused #touch,
+  body.onlinePaused #touch2 {
+    display: none !important;
+  }
+  @media (pointer: fine) {
+    #touch,
+    #touch2 {
+      display: none !important;
+    }
+  }
+  body.vsplay #vsHud {
+    top: calc(var(--hdrH) + 6px);
+    right: 6px;
+    left: auto;
+    transform: none;
+    height: auto;
+    max-width: calc(100vw - var(--side) - 16px);
+    gap: 4px;
+    padding: 5px 10px;
+  }
+  body.vsplay .vs-round {
+    font-size: 10px;
+  }
+  body.vsplay .mpc {
+    padding: 2px 5px;
+    gap: 4px;
+  }
+  body.vsplay .mpc b {
+    font-size: 9px;
+  }
+  body.vsplay .mpc .mpc-v {
+    font-size: 10px;
+  }
+
+  body.vsplay.splitMob {
+    flex-direction: column;
+    gap: 0;
+    --barH: 0px;
+    --side: calc(var(--u) * 5);
+    --btnH: min(calc(25vw - 11px), clamp(36px, calc(var(--dvh, 100vh) * 0.075), 50px));
+  }
+  body.vsplay.splitMob main {
+    position: static;
+    order: 2;
+    flex: 0 0 auto;
+    height: calc((var(--dvh, 100vh) - var(--hdrH)) / 2);
+    min-height: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: var(--side) var(--boardW) var(--side);
+    gap: var(--gap);
+    padding: 0 8px;
+    align-content: start;
+    justify-content: center;
+    align-items: stretch;
+  }
+  body.vsplay.splitMob #botArena,
+  body.vsplay.splitMob .arenaBot {
+    position: static;
+    order: 1;
+    flex: 0 0 auto;
+    height: calc((var(--dvh, 100vh) + var(--hdrH)) / 2);
+    min-height: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: var(--side) var(--boardW) var(--side);
+    gap: var(--gap);
+    padding: 0 8px;
+    align-content: start;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    align-items: stretch;
+  }
+  body.vsplay.splitMob .col {
+    display: flex;
+  }
+  body.vsplay.splitMob .col-left {
+    gap: calc(var(--u) * 0.22);
+    overflow: visible;
+    padding-top: 0;
+  }
+  body.vsplay.splitMob .col-left > .panel:first-child {
+    order: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  body.vsplay.splitMob .col-left > .spacer {
+    order: 0;
+    flex: 1 1 auto;
+  }
+  body.vsplay.splitMob .col-left > .actionWrap {
+    order: 0;
+    height: calc(var(--u) * 1.3);
+    margin-bottom: 0;
+  }
+  body.vsplay.splitMob .col-left > .actionWrap.has-action {
+    height: calc(var(--u) * 1.3);
+    margin-bottom: 0;
+  }
+  body.vsplay.splitMob .col-left > .chips {
+    order: 0;
+    height: auto;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+  body.vsplay.splitMob .col-left > .trio-panel {
+    order: 0;
+    margin-bottom: 0;
+    padding: calc(var(--u) * 0.2) calc(var(--u) * 0.24);
+  }
+  body.vsplay.splitMob .col-left > .score-panel {
+    order: 0;
+  }
+  body.vsplay.splitMob .col-left > .trio-panel .trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(var(--u) * 0.12);
+    text-align: center;
+  }
+  body.vsplay.splitMob .col-left > .trio-panel .trio > div {
+    display: block;
+  }
+  body.vsplay.splitMob .col-left > .trio-panel .trio .v {
+    order: 0;
+    font-size: clamp(11px, calc(var(--u) * 0.62), 18px);
+    height: clamp(11px, calc(var(--u) * 0.62), 18px);
+  }
+  body.vsplay.splitMob .col-left > .trio-panel .trio .k {
+    order: 0;
+    margin-top: calc(var(--u) * 0.06);
+    font-size: clamp(8px, calc(var(--u) * 0.34), 11px);
+    letter-spacing: 0.05em;
+  }
+  body.vsplay.splitMob .score-panel .score {
+    font-size: clamp(15px, calc(var(--u) * 1.5), 40px);
+    height: clamp(15px, calc(var(--u) * 1.5), 40px);
+  }
+  body.vsplay.splitMob .score-panel .duo .v {
+    font-size: clamp(11px, calc(var(--u) * 0.72), 24px);
+    height: clamp(11px, calc(var(--u) * 0.72), 24px);
+  }
+  body.vsplay.splitMob .score-panel .duo .k {
+    font-size: clamp(8px, calc(var(--u) * 0.3), 11px);
+  }
+  body.vsplay.splitMob .action .at {
+    font-size: clamp(10px, calc(var(--u) * 0.55), 16px);
+  }
+  body.vsplay.splitMob .action .pts {
+    font-size: clamp(8px, calc(var(--u) * 0.32), 11px);
+  }
+  body.vsplay.splitMob .stage {
+    height: var(--boardH);
+  }
+  body.vsplay.splitMob #vsHud {
+    top: calc(var(--hdrH) + 2px);
+    left: 6px;
+    right: auto;
+    transform: none;
+    max-width: 70vw;
+    padding: 3px 8px;
+    gap: 4px;
+  }
+  body.vsplay.splitMob #touch {
+    z-index: 12;
+  }
+  body.vsplay.splitMob #touch2 {
+    z-index: 12;
+  }
+
+  body.revsplit #botArena,
+  body.revsplit .arenaBot {
+    transform: rotate(180deg);
+  }
+  body.revsplit #touch2 {
+    transform: rotate(180deg);
+  }
+  body.vsplay.splitMob.revsplit #vsHud {
+    top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+    left: 6px;
+    right: auto;
+    transform: translateY(-50%);
+    max-width: 46vw;
+  }
+  body.vsplay.splitMob.revsplit #vsHud2 {
+    display: flex;
+    top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+    left: auto;
+    right: 6px;
+    transform: translateY(-50%) rotate(180deg);
+    max-width: 46vw;
+  }
+  body.vsplay #vsHud,
+  body.vsplay #vsHud2 {
+    flex-direction: column;
+  }
+}
+body.noHuAnim {
+  transition: none;
+}
+@media (pointer: fine) {
+  body.vsplay #vsHud {
+    top: max(6px, calc((var(--hdrH) - var(--hudH, 9999px)) / 2));
+    transform: none;
+    z-index: 13;
+    gap: calc(var(--hudU, var(--u)) * 0.5);
+  }
+
+  body.vsplay:not(.vsWide) #vsHud {
+    padding: calc(var(--hudU, var(--u)) * 0.34) calc(var(--hudU, var(--u)) * 0.6);
+  }
+  body.vsplay:not(.vsWide) #vsHud .vs-round {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.85), 30px);
+  }
+  body.vsplay:not(.vsWide) #vsHud .mp-chips {
+    gap: calc(var(--hudU, var(--u)) * 0.26);
+  }
+  body.vsplay:not(.vsWide) #vsHud .mpc {
+    gap: calc(var(--hudU, var(--u)) * 0.26);
+    padding: calc(var(--hudU, var(--u)) * 0.18) calc(var(--hudU, var(--u)) * 0.42)
+      calc(var(--hudU, var(--u)) * 0.18) calc(var(--hudU, var(--u)) * 0.36);
+  }
+  body.vsplay:not(.vsWide) #vsHud .mpc b {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.62), 20px);
+  }
+  body.vsplay:not(.vsWide) #vsHud .mpc .mpc-v {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.68), 22px);
+  }
+}
+body.vsplay.splitMob .next-panel {
+  height: var(--boardH);
+  display: flex;
+  flex-direction: column;
+}
+body.vsplay.splitMob .next-panel .nextList {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+body.vsplay.splitMob .next-panel .nextItem {
+  height: auto !important;
+  flex: 1 1 0;
+  min-height: 0;
+}
+body.vsplay.splitMob .score-panel .score {
+  font-size: min(calc(var(--u) * 1.5), 44px);
+  height: min(calc(var(--u) * 1.5), 44px);
+}
+body.vsplay.splitMob .bot-col-left {
+  gap: calc(var(--u) * 0.22);
+  overflow: visible;
+  padding-top: 0;
+}
+body.vsplay.splitMob .bot-col-left > .panel:first-child {
+  order: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body.vsplay.splitMob .bot-col-left > .spacer {
+  order: 0;
+  flex: 1 1 auto;
+}
+body.vsplay.splitMob .bot-col-left > .actionWrap {
+  order: 0;
+  height: calc(var(--u) * 1.3);
+  margin-bottom: 0;
+}
+body.vsplay.splitMob .bot-col-left > .actionWrap.has-action {
+  height: calc(var(--u) * 1.3);
+  margin-bottom: 0;
+}
+body.vsplay.splitMob .bot-col-left > .chips {
+  order: 0;
+  height: auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
+body.vsplay.splitMob .bot-col-left > .trio-panel {
+  order: 0;
+  margin-bottom: 0;
+  padding: calc(var(--u) * 0.2) calc(var(--u) * 0.24);
+}
+body.vsplay.splitMob .bot-col-left > .score-panel {
+  order: 0;
+}
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--u) * 0.12);
+  text-align: center;
+}
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio > div {
+  display: block;
+}
+body.vsplay.splitMob .col-left,
+body.vsplay.splitMob .bot-col-left {
+  position: relative;
+}
+body.vsplay.splitMob .col-left > .actionWrap,
+body.vsplay.splitMob .col-left > .actionWrap.has-action,
+body.vsplay.splitMob .bot-col-left > .actionWrap,
+body.vsplay.splitMob .bot-col-left > .actionWrap.has-action {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(42% - var(--u) * 1.6);
+  height: calc(var(--u) * 2.2);
+  transform: translateY(-50%);
+  margin: 0;
+  z-index: 2;
+}
+.trio .k,
+.mini .k {
+  font-weight: 600;
+}
+.trio .k {
+  font-size: max(8px, min(calc(var(--u) * 0.32), 10px));
+  letter-spacing: 0.06em;
+}
+.mini .k {
+  font-size: max(8px, min(calc(var(--u) * 0.32), 10px));
+  letter-spacing: 0.08em;
+}
+body.vsplay.splitMob .col-left > .trio-panel .trio,
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: calc(var(--u) * 0.24);
+  text-align: left;
+}
+body.vsplay.splitMob .col-left > .trio-panel .trio > div,
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 0.16);
+}
+body.vsplay.splitMob .col-left > .trio-panel .trio .v,
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio .v {
+  order: 2;
+  flex: 0 0 auto;
+  transform: none;
+  line-height: 1.3 !important;
+  height: auto !important;
+  font-size: max(8px, calc(var(--u) * 0.72));
+}
+body.vsplay.splitMob .col-left > .trio-panel .trio .k,
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio .k {
+  order: 1;
+  margin-top: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.25;
+  font-size: max(7px, calc(var(--u) * 0.36));
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+body.vsplay.splitMob .col-left > .score-panel .mini .k,
+body.vsplay.splitMob .bot-col-left > .score-panel .mini .k {
+  font-size: max(8px, calc(var(--u) * 0.32));
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+body.vsplay.splitMob .col-left > .score-panel .mini .v,
+body.vsplay.splitMob .bot-col-left > .score-panel .mini .v {
+  font-size: max(10px, calc(var(--u) * 0.65));
+  line-height: 1.25 !important;
+}
+body.vsplay.splitMob .col-left > .score-panel .score,
+body.vsplay.splitMob .bot-col-left > .score-panel .score {
+  font-size: max(12px, calc(var(--u) * 1));
+  line-height: 1.25 !important;
+}
+@media (pointer: fine) {
+  body.vsplay.vsWide #vsHud {
+    bottom: auto !important;
+  }
+}
+body.vsplay.splitMob .panel h3 {
+  font-size: clamp(8px, calc(var(--u) * 0.3), 10px);
+}
+body.vsplay.splitMob .score-panel .score {
+  font-size: clamp(14px, calc(var(--u) * 1.1), 30px);
+  height: clamp(14px, calc(var(--u) * 1.1), 30px);
+}
+body.vsplay.splitMob .score-panel .mini .v {
+  font-size: clamp(11px, calc(var(--u) * 0.7), 21px);
+  height: clamp(11px, calc(var(--u) * 0.7), 21px);
+}
+body.vsplay.splitMob .score-panel .mini .k {
+  font-size: clamp(8px, calc(var(--u) * 0.3), 10px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+body.vsplay.splitMob .trio-panel .trio .v {
+  font-size: clamp(10px, calc(var(--u) * 0.5), 15px);
+  height: clamp(10px, calc(var(--u) * 0.5), 15px);
+}
+body.vsplay.splitMob .trio-panel .trio .k {
+  font-size: clamp(8px, calc(var(--u) * 0.28), 10px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+@media (pointer: fine) {
+  body.vsplay .panel h3 {
+    font-size: clamp(8px, calc(var(--u) * 0.3), 10px);
+  }
+  body.vsplay .score-panel .score {
+    font-size: clamp(16px, calc(var(--u) * 1.2), 38px);
+    height: clamp(16px, calc(var(--u) * 1.2), 38px);
+  }
+  body.vsplay .score-panel .mini .v {
+    font-size: clamp(12px, calc(var(--u) * 0.8), 26px);
+    height: clamp(12px, calc(var(--u) * 0.8), 26px);
+  }
+  body.vsplay .score-panel .mini .k {
+    font-size: clamp(8px, calc(var(--u) * 0.32), 11px);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  body.vsplay .trio-panel .trio {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: calc(var(--u) * 0.14);
+    text-align: left;
+  }
+  body.vsplay .trio-panel .trio > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  body.vsplay .trio-panel .trio .v {
+    order: 2;
+    font-size: clamp(10px, calc(var(--u) * 0.5), 16px);
+    height: auto;
+  }
+  body.vsplay .trio-panel .trio .k {
+    order: 1;
+    margin-top: 0;
+    font-size: clamp(7px, calc(var(--u) * 0.28), 10px);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+}
+@media (pointer: coarse) {
+  body:not(.vsplay) .score-panel .score {
+    font-size: clamp(22px, calc(var(--u) * 1.5), 52px);
+    height: clamp(22px, calc(var(--u) * 1.5), 52px);
+  }
+  body:not(.vsplay) .score-panel .mini .v {
+    font-size: clamp(14px, calc(var(--u) * 0.95), 32px);
+    height: clamp(14px, calc(var(--u) * 0.95), 32px);
+  }
+  body:not(.vsplay) .score-panel .mini .k {
+    font-size: clamp(9px, calc(var(--u) * 0.34), 11px);
+    font-weight: 600;
+  }
+  body:not(.vsplay) .trio-panel .trio .v {
+    font-size: clamp(13px, calc(var(--u) * 0.6), 18px);
+    height: clamp(13px, calc(var(--u) * 0.6), 18px);
+  }
+  body:not(.vsplay) .trio-panel .trio .k {
+    font-size: clamp(8px, calc(var(--u) * 0.3), 10px);
+    font-weight: 600;
+  }
+}
+@media (pointer: fine) {
+  body:not(.vsplay) .score-panel .score {
+    font-size: clamp(24px, calc(var(--u) * 1.5), 52px);
+    height: clamp(24px, calc(var(--u) * 1.5), 52px);
+  }
+  body:not(.vsplay) .score-panel .mini .v {
+    font-size: clamp(15px, calc(var(--u) * 0.95), 32px);
+    height: clamp(15px, calc(var(--u) * 0.95), 32px);
+  }
+  body:not(.vsplay) .score-panel .mini .k {
+    font-size: clamp(10px, calc(var(--u) * 0.34), 12px);
+    font-weight: 600;
+  }
+  body:not(.vsplay) .trio-panel .trio .v {
+    font-size: clamp(13px, calc(var(--u) * 0.6), 20px);
+    height: clamp(13px, calc(var(--u) * 0.6), 20px);
+  }
+  body:not(.vsplay) .trio-panel .trio .k {
+    font-size: clamp(9px, calc(var(--u) * 0.3), 11px);
+    font-weight: 600;
+  }
+}
+@media (pointer: coarse) {
+  body:not(.vsplay) .col-left > .score-panel {
+    order: 5;
+  }
+  body:not(.vsplay) .col-left > .trio-panel {
+    order: 6;
+  }
+}
+body:not(.vsplay) .panel h3 {
+  --acchi: var(--grp);
+}
+body.wide:not(.vsplay) .score-panel .score {
+  font-size: max(9px, calc(var(--u) * 1.19)) !important;
+  height: auto !important;
+  line-height: 1.25 !important;
+}
+body.wide:not(.vsplay) .score-panel .mini .v,
+body.wide:not(.vsplay) .score-panel .duo .v {
+  font-size: max(7px, calc(var(--u) * 0.73)) !important;
+  height: auto !important;
+  line-height: 1.25 !important;
+}
+body.wide:not(.vsplay) .score-panel .mini .k,
+body.wide:not(.vsplay) .score-panel .duo .k {
+  font-size: max(6px, calc(var(--u) * 0.4)) !important;
+}
+body.wide:not(.vsplay) .trio-panel {
+  padding: calc(var(--u) * 0.3) calc(var(--u) * 0.28) !important;
+}
+body.wide:not(.vsplay) .trio-panel .trio {
+  display: flex !important;
+  flex-direction: column-reverse !important;
+  gap: calc(var(--u) * 0.18);
+  text-align: left !important;
+}
+body.wide:not(.vsplay) .trio-panel .trio > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: calc(var(--u) * 0.16);
+}
+body.wide:not(.vsplay) .trio-panel .trio .v {
+  order: 2 !important;
+  flex: 0 0 auto;
+  transform: none;
+  line-height: 1.15 !important;
+  height: auto !important;
+  font-size: max(7px, calc(var(--u) * 0.87)) !important;
+}
+body.wide:not(.vsplay) .trio-panel .trio .k {
+  order: 1 !important;
+  margin-top: 0 !important;
+  flex: 0 1 auto;
+  min-width: 0;
+  line-height: 1.1;
+  font-size: max(6px, calc(var(--u) * 0.48)) !important;
+}
+body.wide:not(.vsplay) .panel h3 {
+  font-size: max(6px, calc(var(--u) * 0.36)) !important;
+  letter-spacing: 0.1em;
+}
+body.wide:not(.vsplay) .action .at {
+  font-size: max(8px, calc(var(--u) * 0.84)) !important;
+}
+body.wide:not(.vsplay) .action .pts {
+  font-size: max(6px, calc(var(--u) * 0.5)) !important;
+}
+body.wide:not(.vsplay) .chip {
+  font-size: max(6px, calc(var(--u) * 0.54)) !important;
+  letter-spacing: 0.06em;
+}
+@media (pointer: coarse) {
+  body:not(.vsplay) .score-panel .duo {
+    gap: calc(var(--u) * 0.2);
+    margin-top: calc(var(--u) * 0.2) !important;
+  }
+  body:not(.vsplay) .score-panel .mini .v {
+    font-size: min(calc(var(--u) * 0.66), 22px);
+    height: min(calc(var(--u) * 0.66), 22px);
+  }
+  body:not(.vsplay) .score-panel .mini .k {
+    font-size: min(calc(var(--u) * 0.28), 9px);
+    letter-spacing: 0.05em;
+  }
+
+  body:not(.vsplay) .col-left {
+    position: relative;
+  }
+  body:not(.vsplay) .col-left > .actionWrap,
+  body:not(.vsplay) .col-left > .actionWrap.has-action {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - var(--u) * 2.4);
+    transform: translateY(-50%);
+    height: auto;
+    margin: 0;
+    z-index: 2;
+  }
+}
+body:not(.vsplay) #vsHud,
+body:not(.vsplay) #vsHud2,
+body:has(.overlay:not(.hidden)) #vsHud,
+body:has(.overlay:not(.hidden)) #vsHud2,
+body:not(.playing):not(.vsplay) #vsHud,
+body:not(.playing):not(.vsplay) #vsHud2 {
+  display: none !important;
+  visibility: hidden !important;
+}
+body.vsplay.splitMob:not(.revsplit) #vsHud2 {
+  display: none !important;
+}
+body.vsplay.splitMob.revsplit #vsHud {
+  display: flex !important;
+  bottom: auto !important;
+  left: 6px !important;
+  right: auto !important;
+  max-width: 46vw;
+  margin: 0 !important;
+  top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+  transform: translateY(-50%);
+}
+body.vsplay.splitMob.revsplit #vsHud2 {
+  display: flex !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: 6px !important;
+  max-width: 46vw;
+  margin: 0 !important;
+  top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+  transform: translateY(-50%) rotate(180deg);
+}
+body.vsplay.vsWide #vsHud .mpc,
+body.vsplay.vsWide #vsHud2 .mpc {
+  padding: 2px 6px 2px 5px;
+  gap: 4px;
+}
+body.vsplay.vsWide #vsHud .mpc b,
+body.vsplay.vsWide #vsHud2 .mpc b {
+  font-size: 10px;
+}
+body.vsplay.vsWide #vsHud .mpc .mpc-v,
+body.vsplay.vsWide #vsHud2 .mpc .mpc-v {
+  font-size: 11px;
+}
+body.vsplay.vsWide #vsHud .vs-round,
+body.vsplay.vsWide #vsHud2 .vs-round {
+  font-size: min(calc(var(--u) * 0.5), 14px);
+}
+body.vsplay .panel h3 {
+  font-size: clamp(8px, calc(var(--u) * 0.34), 13px) !important;
+}
+body.vsplay .action .at {
+  font-size: clamp(10px, calc(var(--u) * 0.56), 18px) !important;
+}
+body.vsplay .action .pts {
+  font-size: clamp(8px, calc(var(--u) * 0.34), 13px) !important;
+}
+body.vsplay .score-panel .score {
+  font-size: clamp(12px, calc(var(--u) * 1), 28px) !important;
+  height: clamp(12px, calc(var(--u) * 1), 28px) !important;
+}
+body.vsplay .score-panel .mini .v {
+  font-size: clamp(10px, calc(var(--u) * 0.65), 20px) !important;
+  height: clamp(10px, calc(var(--u) * 0.65), 20px) !important;
+}
+body.vsplay .score-panel .mini .k {
+  font-size: clamp(8px, calc(var(--u) * 0.32), 12px) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+body.vsplay .trio-panel {
+  padding: calc(var(--u) * 0.38) calc(var(--u) * 0.26);
+}
+body.vsplay .trio-panel .trio .v {
+  font-size: clamp(10px, calc(var(--u) * 0.56), 18px) !important;
+  height: clamp(10px, calc(var(--u) * 0.56), 18px) !important;
+}
+body.vsplay .trio-panel .trio .k {
+  font-size: clamp(9px, calc(var(--u) * 0.34), 13px) !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+body.vsplay.vsWide .panel h3 {
+  font-size: clamp(6px, calc(var(--u) * 0.2), 8px) !important;
+}
+body.vsplay.vsWide .score-panel .score {
+  font-size: clamp(10px, calc(var(--u) * 0.8), 22px) !important;
+  height: clamp(10px, calc(var(--u) * 0.8), 22px) !important;
+}
+body.vsplay.vsWide .score-panel .mini .v {
+  font-size: clamp(9px, calc(var(--u) * 0.5), 16px) !important;
+  height: clamp(9px, calc(var(--u) * 0.5), 16px) !important;
+}
+body.vsplay.vsWide .score-panel .mini .k {
+  font-size: clamp(6px, calc(var(--u) * 0.2), 8px) !important;
+}
+body.vsplay.vsWide .trio-panel .trio .v {
+  font-size: clamp(8px, calc(var(--u) * 0.4), 13px) !important;
+  height: clamp(8px, calc(var(--u) * 0.4), 13px) !important;
+}
+body.vsplay.vsWide .trio-panel .trio .k {
+  font-size: clamp(6px, calc(var(--u) * 0.18), 8px) !important;
+}
+@media (pointer: fine) {
+  body.vsplay .trio-panel .trio .v {
+    font-size: clamp(11px, calc(var(--u) * 0.55), 18px) !important;
+    height: auto !important;
+  }
+  body.vsplay .trio-panel .trio .k {
+    font-size: clamp(8px, calc(var(--u) * 0.28), 11px) !important;
+  }
+  body.vsplay.online-play .trio-panel .trio .k {
+    font-size: clamp(9px, calc(var(--u) * 0.34), 14px) !important;
+  }
+}
+@media (pointer: fine) {
+  body.vsplay .trio-panel {
+    padding: calc(var(--u) * 0.55) calc(var(--u) * 0.34) !important;
+  }
+  body.vsplay .trio-panel .trio {
+    gap: calc(var(--u) * 0.3);
+  }
+  body.vsplay .trio-panel .trio .v {
+    font-size: clamp(13px, calc(var(--u) * 0.68), 24px) !important;
+    height: auto !important;
+  }
+  body.vsplay .trio-panel .trio .k {
+    font-size: clamp(10px, calc(var(--u) * 0.42), 16px) !important;
+  }
+
+  body.vsplay.vsWide .trio-panel {
+    padding: calc(var(--u) * 0.3) calc(var(--u) * 0.28) !important;
+  }
+  body.vsplay.vsWide .trio-panel .trio {
+    gap: calc(var(--u) * 0.18);
+  }
+  body.vsplay.vsWide .trio-panel .trio .v {
+    line-height: 1.15 !important;
+  }
+  body.vsplay.vsWide .trio-panel .trio .k {
+    line-height: 1.1 !important;
+    margin-top: 0 !important;
+  }
+}
+@media (pointer: coarse) {
+  body.vsplay.mobOnMulti main .trio-panel,
+  body.vsplay.splitMob main .trio-panel,
+  body.vsplay.splitMob #botArena .trio-panel,
+  body.vsplay.splitMob .arenaBot .trio-panel {
+    padding: calc(var(--u) * 0.4) calc(var(--u) * 0.3) calc(var(--u) * 0.5) !important;
+  }
+  body.vsplay.mobOnMulti main .trio-panel .trio .v,
+  body.vsplay.splitMob main .trio-panel .trio .v,
+  body.vsplay.splitMob #botArena .trio-panel .trio .v,
+  body.vsplay.splitMob .arenaBot .trio-panel .trio .v {
+    font-size: max(8px, calc(var(--u) * 0.72)) !important;
+    height: auto !important;
+  }
+  body.vsplay.mobOnMulti main .trio-panel .trio .k,
+  body.vsplay.splitMob main .trio-panel .trio .k,
+  body.vsplay.splitMob #botArena .trio-panel .trio .k,
+  body.vsplay.splitMob .arenaBot .trio-panel .trio .k {
+    font-size: max(7px, calc(var(--u) * 0.36)) !important;
+  }
+  body.vsplay.splitMob main .score-panel .score,
+  body.vsplay.splitMob #botArena .score-panel .score,
+  body.vsplay.splitMob .arenaBot .score-panel .score {
+    font-size: max(12px, calc(var(--u) * 1)) !important;
+    height: auto !important;
+  }
+  body.vsplay.splitMob main .score-panel .mini .v,
+  body.vsplay.splitMob #botArena .score-panel .mini .v,
+  body.vsplay.splitMob .arenaBot .score-panel .mini .v {
+    font-size: max(10px, calc(var(--u) * 0.65)) !important;
+    height: auto !important;
+  }
+  body.vsplay.splitMob main .score-panel .mini .k,
+  body.vsplay.splitMob #botArena .score-panel .mini .k,
+  body.vsplay.splitMob .arenaBot .score-panel .mini .k {
+    font-size: max(8px, calc(var(--u) * 0.32)) !important;
+  }
+}
+@media (pointer: fine) {
+  body.vsplay.online-play .panel h3 {
+    font-size: clamp(10px, calc(var(--u) * 0.42), 16px) !important;
+  }
+  body.vsplay.online-play .score-panel .score {
+    font-size: clamp(16px, calc(var(--u) * 1.25), 40px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play .score-panel .mini .v {
+    font-size: clamp(12px, calc(var(--u) * 0.85), 26px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play .score-panel .mini .k {
+    font-size: clamp(9px, calc(var(--u) * 0.4), 14px) !important;
+  }
+  body.vsplay.online-play .trio-panel .trio .v {
+    font-size: clamp(12px, calc(var(--u) * 0.8), 24px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play .trio-panel .trio .k {
+    font-size: clamp(9px, calc(var(--u) * 0.44), 15px) !important;
+  }
+  body.vsplay.online-play .action .at {
+    font-size: clamp(12px, calc(var(--u) * 0.7), 22px) !important;
+  }
+  body.vsplay.online-play .action .pts {
+    font-size: clamp(9px, calc(var(--u) * 0.42), 14px) !important;
+  }
+
+  body.vsplay.online-play:not(.onlineMulti) #botArena .ping-val {
+    font-size: clamp(12px, calc(var(--u) * 0.95), 30px);
+  }
+
+  body.vsplay.online-play.onlineMulti #botArena .panel h3,
+  body.vsplay.online-play.onlineMulti .arenaExtra .panel h3 {
+    font-size: clamp(11px, calc(var(--u) * 0.5), 18px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .score-panel .score,
+  body.vsplay.online-play.onlineMulti .arenaExtra .score-panel .score {
+    font-size: clamp(18px, calc(var(--u) * 1.4), 44px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .score-panel .mini .v,
+  body.vsplay.online-play.onlineMulti .arenaExtra .score-panel .mini .v {
+    font-size: clamp(13px, calc(var(--u) * 0.95), 30px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .score-panel .mini .k,
+  body.vsplay.online-play.onlineMulti .arenaExtra .score-panel .mini .k {
+    font-size: clamp(10px, calc(var(--u) * 0.46), 16px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .trio-panel .trio .v,
+  body.vsplay.online-play.onlineMulti .arenaExtra .trio-panel .trio .v {
+    font-size: clamp(13px, calc(var(--u) * 0.9), 28px) !important;
+    height: auto !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .trio-panel .trio .k,
+  body.vsplay.online-play.onlineMulti .arenaExtra .trio-panel .trio .k {
+    font-size: clamp(10px, calc(var(--u) * 0.5), 17px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .action .at,
+  body.vsplay.online-play.onlineMulti .arenaExtra .action .at {
+    font-size: clamp(13px, calc(var(--u) * 0.8), 26px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .action .pts,
+  body.vsplay.online-play.onlineMulti .arenaExtra .action .pts {
+    font-size: clamp(10px, calc(var(--u) * 0.48), 16px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .chip,
+  body.vsplay.online-play.onlineMulti .arenaExtra .chip {
+    font-size: clamp(10px, calc(var(--u) * 0.5), 16px) !important;
+  }
+  body.vsplay.online-play.onlineMulti #botArena .ping-val,
+  body.vsplay.online-play.onlineMulti .arenaExtra .ping-val {
+    font-size: clamp(12px, calc(var(--u) * 0.95), 30px);
+  }
+}
+body.vsplay.splitMob.revsplit #vsHud {
+  top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+  left: 6px !important;
+  right: auto !important;
+  transform: translateY(-50%);
+  max-width: 46vw;
+}
+body.vsplay.splitMob.revsplit #vsHud2 {
+  display: flex !important;
+  top: calc(var(--dvh, 100vh) / 2 + var(--hdrH) / 4);
+  left: auto !important;
+  right: 6px !important;
+  transform: translateY(-50%) rotate(180deg);
+  max-width: 46vw;
+}
+@media (pointer: fine) {
+  body.vsplay.vsWide #vsHud {
+    padding: calc(var(--hudU, var(--u)) * 0.2) calc(var(--hudU, var(--u)) * 0.5);
+  }
+  body.vsplay.vsWide #vsHud .vs-round,
+  body.vsplay.vsWide #vsHud2 .vs-round {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.6), 17px);
+  }
+  body.vsplay.vsWide #vsHud .mp-chips {
+    gap: calc(var(--hudU, var(--u)) * 0.18);
+  }
+  body.vsplay.vsWide #vsHud .mpc,
+  body.vsplay.vsWide #vsHud2 .mpc {
+    gap: calc(var(--hudU, var(--u)) * 0.16);
+    padding: calc(var(--hudU, var(--u)) * 0.12) calc(var(--hudU, var(--u)) * 0.3)
+      calc(var(--hudU, var(--u)) * 0.12) calc(var(--hudU, var(--u)) * 0.26);
+  }
+  body.vsplay.vsWide #vsHud .mpc b,
+  body.vsplay.vsWide #vsHud2 .mpc b {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.48), 14px);
+  }
+  body.vsplay.vsWide #vsHud .mpc .mpc-v,
+  body.vsplay.vsWide #vsHud2 .mpc .mpc-v {
+    font-size: min(calc(var(--hudU, var(--u)) * 0.54), 16px);
+  }
+}
+body.practice.practice-default {
+  --bu: var(--u);
+}
+body.practice.practice-default main {
+  align-content: start;
+}
+body.practice.practice-default .stage {
+  align-self: start;
+}
+@media (pointer: coarse) {
+  body.practice.practice-default main {
+    padding-top: calc(var(--hdrH) + var(--u) * 3 + 4px);
+  }
+
+  body.practice.practice-default .practice-panel {
+    gap: calc(var(--u) * 0.16);
+  }
+
+  body.practice.practice-default .practice-btn {
+    height: clamp(22px, 3vh, 34px);
+  }
+}
+#vsHud .mpc,
+#vsHud2 .mpc {
+  align-items: center;
+}
+#vsHud .mpc b,
+#vsHud2 .mpc b,
+#vsHud .mpc .mpc-v,
+#vsHud2 .mpc .mpc-v {
+  line-height: 1 !important;
+}
+#vsHud .mpc .mpc-v,
+#vsHud2 .mpc .mpc-v {
+  display: inline-flex;
+  align-items: center;
+  transform: translateY(-1px);
+}
+.trio-panel .trio > div {
+  align-items: center !important;
+}
+.trio-panel .trio .v,
+body.vsplay .trio-panel .trio .v,
+body.vsplay.splitMob .col-left > .trio-panel .trio .v,
+body.vsplay.splitMob .bot-col-left > .trio-panel .trio .v {
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+}
+.score-panel .mini .v,
+.score-panel .duo .v {
+  line-height: 1 !important;
+}
+body.vsplay.splitMob main,
+body.vsplay.splitMob #botArena,
+body.vsplay.splitMob .arenaBot {
+  grid-template-columns: var(--side) var(--boardW) var(--side) !important;
+  gap: var(--gap) !important;
+  justify-content: center !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+body.vsplay.splitMob .col-left,
+body.vsplay.splitMob .bot-col-left,
+body.vsplay.splitMob .col-right,
+body.vsplay.splitMob .bot-col-right {
+  min-width: 0;
+}
+body.vsplay.splitMob:not(.revsplit) #vsHud .mp-chips {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+body.vsplay.splitMob:not(.revsplit) #vsHud .mpc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+}
+body.vsplay.splitMob:not(.revsplit) #vsHud .mpc b {
+  min-width: 2ch;
+}
+body.vsplay.splitMob:not(.revsplit) #vsHud .mpc .mpc-v {
+  margin-left: auto;
+  text-align: right;
+}
+.step .ctl .save-btn {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: min(1.5vh, 12px) min(2.4vw, 18px);
+}
+#onlineHostControls.host-disabled .vsm-card,
+#onlineHostControls.host-disabled .step button {
+  pointer-events: none;
+  opacity: 0.55;
+}
+#onlineHostControls.host-disabled .grp-title::after {
+  content: " (HOST ONLY)";
+  color: var(--mut);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}

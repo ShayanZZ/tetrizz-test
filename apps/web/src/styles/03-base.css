@@ -1,0 +1,55 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+button {
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  --hdrH: calc(clamp(30px, var(--hu) * 1.05, 42px) + var(--hu) * 0.44);
+  --cols: 10;
+  --vis: 20;
+  --vdiv: 24.3;
+  --sideU: 5;
+  --gapU: 0.7;
+  --u: max(
+    0px,
+    min(37px, min(calc((var(--dvh, 100vh) - 36px) / var(--vdiv)), calc((100vw - 28px) / 21.4)))
+  );
+  --uMenu: max(
+    0px,
+    min(37px, min(calc((var(--dvh, 100vh) - 36px) / 24.3), calc((100vw - 28px) / 21.4)))
+  );
+  --hu: var(--uMenu);
+  transition: --hu 0.35s ease;
+  --bu: var(--u);
+  --boardH: calc(var(--bu) * var(--vis));
+  --boardW: calc(var(--bu) * var(--cols));
+  --side: calc(var(--u) * var(--sideU));
+  --gap: calc(var(--u) * var(--gapU));
+  --btnH: 64px;
+  --barH: 0px;
+  --tglW: clamp(82px, 23vw, 120px);
+  background: var(--bg);
+  color: var(--txt);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  height: var(--dvh, 100vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+body.playing {
+  --hu: var(--uMenu);
+}
+body::after {
+  content: none;
+}

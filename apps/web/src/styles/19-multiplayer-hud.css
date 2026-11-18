@@ -1,0 +1,527 @@
+#vsHud,
+#vsHud2 {
+  display: none;
+  position: fixed;
+  top: calc(var(--hdrH) + 4px);
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
+  max-width: 96vw;
+  z-index: 9;
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--u) * 0.5);
+  padding: calc(var(--u) * 0.16) calc(var(--u) * 0.6);
+  background: var(--bar-bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  white-space: nowrap;
+}
+body.vsplay #vsHud {
+  display: flex;
+}
+body.matchover #vsHud,
+body.matchover #vsHud2 {
+  display: none !important;
+}
+body:has(.overlay:not(.hidden)) #vsHud,
+body:has(.overlay:not(.hidden)) #vsHud2 {
+  display: none !important;
+}
+#vsHud2 {
+  display: none;
+}
+#botArena,
+.arenaExtra {
+  display: none;
+}
+.vgauge {
+  display: none;
+}
+body.vsplay .vgauge {
+  display: block;
+}
+body.vsplay {
+  --mpN: 2;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: calc(var(--u) * 2.2);
+  --u: max(
+    0px,
+    min(
+      30px,
+      min(calc((var(--dvh, 100vh) - 36px) / var(--vdiv)), calc((100vw/var(--mpN, 2) - 30px) / 21.4))
+    )
+  );
+}
+body.vsplay main {
+  position: static;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  height: var(--dvh, 100vh);
+  padding: calc(var(--hdrH) + var(--u) * 3 + 6px) 8px 18px 14px;
+  justify-content: center;
+}
+body.vsplay #botArena,
+body.vsplay .arenaBot {
+  position: static;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: var(--side) var(--boardW) var(--side);
+  gap: var(--gap);
+  padding: calc(var(--hdrH) + var(--u) * 3 + 6px) 14px 18px 8px;
+  align-items: stretch;
+  align-content: center;
+  justify-content: center;
+}
+body.vsplay .arenaBot .col {
+  display: flex;
+}
+body.vsplay .practice-panel {
+  display: none;
+}
+body.vsplay .vgauge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--u) * 0.38);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--u) * 0.12);
+  background: var(--chip-bg);
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+body.vsplay .vgs {
+  left: calc(var(--u) * -0.54);
+}
+body.vsplay #vsHud {
+  flex-direction: column !important;
+  align-items: center;
+}
+body.vsplay.vsWide:not(.splitMob) #vsHud {
+  bottom: auto !important;
+}
+body.vsplay.vsWide.vs3P:not(.online-play) #vsHud {
+  flex-direction: row !important;
+  align-items: center;
+  gap: calc(var(--u) * 0.5);
+}
+.gv-t {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, #ffe08a, #e0a93a);
+  transition: height 0.2s ease;
+}
+.gv-p {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, #ff8a5e, #c23a55);
+  transition:
+    height 0.2s ease,
+    bottom 0.2s ease;
+}
+#wrap.garbage-hit #board,
+#botWrap.garbage-hit #botBoard,
+.mpWrap.garbage-hit .mpBoardCv {
+  animation: ghit 0.32s;
+}
+.vgauge.cancel-flash {
+  animation: gcancel 0.4s ease-out;
+}
+@keyframes gcancel {
+  0% {
+    box-shadow: 0 0 12px 2px rgba(79, 224, 138, 0.7);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+@keyframes ghit {
+  25% {
+    transform: translateY(3px);
+  }
+  55% {
+    transform: translateY(-2px);
+  }
+  80% {
+    transform: translateY(1px);
+  }
+}
+.vs-round {
+  font:
+    700 min(calc(var(--u) * 0.55), 18px)/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.16em;
+  color: #2a93a8;
+  text-shadow: 0 0 12px rgba(42, 147, 168, 0.5);
+  white-space: nowrap;
+}
+.mp-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: min(92vw, 620px);
+}
+.mpc {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--pc, #7c8cc7);
+  background: var(--chip-bg);
+  font: 600 12px/1 "IBM Plex Mono";
+}
+.mpc b {
+  font:
+    700 12px/1 "Chakra Petch",
+    sans-serif;
+  color: var(--pc, #7c8cc7);
+  letter-spacing: 0.06em;
+}
+.mpc .mpc-v {
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+.mpc-ping {
+  font:
+    500 9px/1 "IBM Plex Mono",
+    monospace;
+  color: var(--mut);
+  letter-spacing: 0.02em;
+}
+.mpc-ping:empty {
+  display: none;
+}
+body.vsplay #banner.count {
+  font-size: calc(var(--bcell, 16px) * 2.4);
+  letter-spacing: 0.04em;
+}
+body.vsplay #banner.round {
+  font-size: calc(var(--bcell, 16px) * 0.95);
+  letter-spacing: 0.1em;
+}
+.vsm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 6px;
+}
+@media (min-width: 760px) {
+  .vsm-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.vsm-card {
+  --mc: var(--acchi);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-g);
+  cursor: pointer;
+  transition: 0.15s;
+  color: var(--txt);
+}
+.vsm-card:hover {
+  border-color: var(--mc);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px -12px var(--mc);
+}
+.vsm-card.active {
+  border-color: var(--mc);
+  box-shadow:
+    0 0 0 1px var(--mc),
+    0 10px 26px -10px var(--mc);
+}
+.vsm-card.active .vsm-name {
+  color: var(--mc);
+  text-shadow: 0 0 12px var(--mc);
+}
+.vsm-card[data-vsm="battle"] {
+  --mc: #c23a55;
+}
+.vsm-card[data-vsm="wide"] {
+  --mc: #7a52bd;
+}
+.vsm-card[data-vsm="endless"] {
+  --mc: #4257b8;
+}
+.vsm-card[data-vsm="ultra"] {
+  --mc: #e0862e;
+}
+.vsm-card[data-vsm="sprint"] {
+  --mc: #2f9468;
+}
+.vsm-name {
+  font:
+    700 11px/1.15 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.vsm-desc {
+  font: 500 8px/1.35 "IBM Plex Mono";
+  letter-spacing: 0.02em;
+  color: var(--mut2);
+  text-align: center;
+}
+.mp-lobby {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 4px 0 6px;
+}
+@media (min-width: 760px) {
+  .mp-lobby {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.mp-card {
+  --pc: var(--acchi);
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-g);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    opacity 0.25s;
+  animation: mpIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+.mp-card:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.mp-card:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.mp-card:nth-child(4) {
+  animation-delay: 0.21s;
+}
+@keyframes mpIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+.mp-card:hover {
+  border-color: var(--pc);
+  box-shadow: 0 8px 24px -14px var(--pc);
+}
+.mp-card.off {
+  opacity: 0.5;
+}
+.mp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mp-tile {
+  font:
+    700 13px/1 "Chakra Petch",
+    sans-serif;
+  color: #fff;
+  background: var(--pc);
+  border-radius: 6px;
+  padding: 6px 9px;
+  box-shadow: 0 4px 14px -4px var(--pc);
+  letter-spacing: 0.08em;
+  transition: background 0.25s;
+}
+.mp-name {
+  font: 600 10px/1.2 "IBM Plex Mono";
+  color: var(--mut2);
+  letter-spacing: 0.14em;
+}
+.mp-types {
+  display: flex;
+  gap: 6px;
+}
+.mp-type-btn {
+  flex: 1;
+  font:
+    700 10px/1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.08em;
+  padding: 8px 4px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--mut2);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.mp-type-btn:hover {
+  color: var(--txt);
+  border-color: rgba(var(--acchi-rgb), 0.5);
+}
+.mp-type-btn.on {
+  color: #fff;
+  background: var(--pc);
+  border-color: transparent;
+  box-shadow: 0 4px 12px -6px var(--pc);
+}
+.mp-devs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+  align-items: center;
+}
+.mp-dev-none {
+  font: 500 10px/1.3 "IBM Plex Mono";
+  color: var(--mut);
+  letter-spacing: 0.06em;
+}
+.mp-dev-none.mp-err {
+  font-size: 8px;
+  line-height: 1.4;
+  color: #f5546b;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+.mp-dev-btn {
+  font: 600 10px/1 "IBM Plex Mono";
+  letter-spacing: 0.06em;
+  padding: 8px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--chip-bg);
+  color: var(--mut2);
+  cursor: pointer;
+  transition: 0.15s;
+}
+.mp-dev-btn:hover {
+  color: var(--txt);
+  border-color: rgba(var(--acchi-rgb), 0.5);
+  transform: translateY(-1px);
+}
+.mp-dev-btn.on {
+  color: var(--pc);
+  border-color: var(--pc);
+  box-shadow:
+    0 0 0 1px var(--pc),
+    0 0 12px -6px var(--pc);
+  background: rgba(255, 255, 255, 0.04);
+}
+.mp-rules {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.35s ease,
+    opacity 0.3s ease;
+}
+.mp-rules.closed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+.mp-rules-in {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mpWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.85);
+  transition: box-shadow 0.3s;
+  will-change: transform;
+}
+.mpBoardCv {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--bu) * -3);
+  height: calc(100% + var(--bu) * 3);
+  width: 100%;
+  display: block;
+}
+.mpBanner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  z-index: 4;
+  text-align: center;
+  pointer-events: none;
+  font:
+    700 calc(var(--bcell, 16px) * 0.8)/1.1 "Chakra Petch",
+    sans-serif;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  text-shadow:
+    0 0 34px currentColor,
+    0 2px 10px rgba(0, 0, 0, 0.55);
+}
+.mpBanner.count {
+  font-size: calc(var(--bcell, 16px) * 2.4);
+  letter-spacing: 0.04em;
+}
+.mpBanner.round {
+  font-size: calc(var(--bcell, 16px) * 0.95);
+  letter-spacing: 0.1em;
+  line-height: 1.05;
+}
+.mpBanner.end {
+  font-size: calc(var(--bcell, 16px) * 0.9);
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.mpBanner.pc {
+  white-space: nowrap;
+  font-size: calc(var(--bcell, 16px) * 0.95);
+  line-height: 1.05;
+}
+.mpBanner.pc2 {
+  white-space: pre-line;
+  line-height: 1.02;
+  top: 40%;
+  font-size: calc(var(--bcell, 16px) * 1.7);
+}
+.mpBanner.pc2.go {
+  animation: banPC 1.25s ease-out;
+}
+.mpBanner.go {
+  animation: ban 1.15s ease-out;
+}
+.mpBanner.count.go {
+  animation-duration: 0.95s;
+}

@@ -1,0 +1,41 @@
+{
+  "name": "tetrizz",
+  "version": "1.2.0",
+  "private": true,
+  "description": "TetriZZ: a Tetris game with solo modes, bots, local and online versus, replays and practice.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @tetrizz/web",
+    "build": "npm run build -w @tetrizz/web",
+    "build:single": "npm run build:single -w @tetrizz/web",
+    "build:all": "npm run build && npm run build:single",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "python3 tests/harness/verify.py",
+    "bench": "vitest run --config vitest.bench.config.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.6",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.1.0"
+  }
+}

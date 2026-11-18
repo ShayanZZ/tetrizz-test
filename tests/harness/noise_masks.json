@@ -1,0 +1,82 @@
+{
+  "desktop-dark/install-popup": [
+    [
+      605,
+      698,
+      665,
+      716
+    ]
+  ],
+  "desktop-dark/menu-main": [
+    [
+      605,
+      698,
+      665,
+      716
+    ]
+  ],
+  "desktop-light/install-popup": [
+    [
+      605,
+      698,
+      665,
+      716
+    ]
+  ],
+  "desktop-light/menu-main": [
+    [
+      605,
+      698,
+      665,
+      716
+    ]
+  ],
+  "phone-dark/install-popup": [
+    [
+      165,
+      822,
+      225,
+      840
+    ]
+  ],
+  "phone-dark/menu-main": [
+    [
+      165,
+      822,
+      225,
+      840
+    ]
+  ],
+  "phone-dark/play-practice": [
+    [
+      10,
+      470,
+      75,
+      525
+    ]
+  ],
+  "phone-light/install-popup": [
+    [
+      165,
+      822,
+      225,
+      840
+    ]
+  ],
+  "phone-light/menu-main": [
+    [
+      165,
+      822,
+      225,
+      840
+    ]
+  ],
+  "phone-light/play-practice": [
+    [
+      10,
+      470,
+      75,
+      525
+    ]
+  ]
+}
