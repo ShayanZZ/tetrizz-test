@@ -1,21 +1,22 @@
 # Running TetriZZ on a VPS with Docker
 
 The files are at the top of the repository: `Dockerfile`, `compose.yaml` (page, TLS and the room server with
-SQLite), `compose.postgres.yaml` (adds PostgreSQL), `compose.monitoring.yaml` (adds Prometheus, Grafana, Loki and
+SQLite), `compose.postgres.yaml` (adds PostgreSQL), `compose.monitoring.yaml` (adds Prometheus, Alertmanager, Grafana, Loki and
 friends) and the `deploy/` folder with their configuration. The step-by-step guides per host (GitHub Pages, Vercel,
 Cloudflare, VPS) come with the deployment guides; this file explains the stack itself.
 
 ## What runs
 
-| Service         | File       | What it does                                                                                       | Memory ceiling |
-| --------------- | ---------- | -------------------------------------------------------------------------------------------------- | -------------- |
-| `caddy`         | base       | The only service reachable from outside (80, 443): TLS, the page, `/ws`, `/api/v1`, `/healthz`.    | 96 MB          |
-| `server`        | base       | The room server. Reached only through Caddy. SQLite file in `./data/sqlite`.                       | 256 MB         |
-| `postgres`      | postgres   | PostgreSQL 18 instead of the SQLite file. Reached only by the server.                              | 384 MB         |
-| `prometheus`    | monitoring | Scrapes `server:8787/metrics`, the machine, itself. 30 days or 1 GB of history.                    | 384 MB         |
-| `grafana`       | monitoring | Three dashboards (Overview, Live, Health). Published on `127.0.0.1:3000` only.                     | 384 MB         |
-| `loki`, `alloy` | monitoring | Logs of the stack's containers, kept 7 days; IPv4 addresses are replaced with `<ip>` before store. | 256 + 192 MB   |
-| `node-exporter` | monitoring | CPU, memory, disk and network of the machine.                                                      | 64 MB          |
+| Service         | File       | What it does                                                                                        | Memory ceiling |
+| --------------- | ---------- | --------------------------------------------------------------------------------------------------- | -------------- |
+| `caddy`         | base       | The only service reachable from outside (80, 443): TLS, the page, `/ws`, `/api/v1`, `/healthz`.     | 96 MB          |
+| `server`        | base       | The room server. Reached only through Caddy. SQLite file in `./data/sqlite`.                        | 256 MB         |
+| `postgres`      | postgres   | PostgreSQL 18 instead of the SQLite file. Reached only by the server.                               | 384 MB         |
+| `prometheus`    | monitoring | Scrapes `server:8787/metrics`, the machine, itself. 30 days or 1 GB of history.                     | 384 MB         |
+| `alertmanager`  | monitoring | Delivers the alerts to Telegram and Discord and pings the outside heartbeat. `127.0.0.1:9093` only. | 64 MB          |
+| `grafana`       | monitoring | Three dashboards (Overview, Live, Health). Published on `127.0.0.1:3000` only.                      | 384 MB         |
+| `loki`, `alloy` | monitoring | Logs of the stack's containers, kept 7 days; IPv4 addresses are replaced with `<ip>` before store.  | 256 + 192 MB   |
+| `node-exporter` | monitoring | CPU, memory, disk and network of the machine.                                                       | 64 MB          |
 
 The ceilings add up to about 350 MB for the base stack, 740 MB with PostgreSQL and 2 GB with monitoring too (sums of the limits, not measured use); plan the VPS accordingly. `init` and
 `init-monitoring` are one-shot jobs that create the data folders and give each one to the user its service runs as.
@@ -106,8 +107,9 @@ Nightly, from cron (`crontab -e`):
 ## Health checks
 
 The server image checks `/healthz` itself and Caddy checks its admin endpoint; the compose files add checks for
-PostgreSQL, Prometheus, Loki and Grafana, and start things in order (init, then database, then server, then Caddy).
-`docker compose ps` shows the result. `GET /healthz` says the process runs; `GET /readyz` also checks the database.
+PostgreSQL, Prometheus, Alertmanager and Grafana, and start things in order (init, then database, then server, then Caddy).
+Loki has no check of its own (its image has no shell, wget or curl to ask with); Prometheus scrapes it instead, and
+`MonitoringComponentDown` fires when it stops answering. `docker compose ps` shows the result. `GET /healthz` says the process runs; `GET /readyz` also checks the database.
 Both are public (through Caddy) and reveal nothing else. `/metrics` is never routed by Caddy.
 
 ## Monitoring
@@ -119,11 +121,46 @@ logs. They are files in `deploy/grafana/dashboards` and are read-only in Grafana
 Export, and put the JSON back in the file.
 
 The alert rules are in `deploy/prometheus/rules/tetrizz.yml` with unit tests next to them. Prometheus evaluates
-them and shows them (Alerts page, and the "Alerts firing" tile and table on the Health dashboard). **Nothing sends
-them anywhere yet**: the server's own Telegram and Discord messages cover what the server sees from inside, but
-"the server is down" and "the disk is full" need a sender (Alertmanager or Grafana contact points), which is an open
-decision (see `docs/PROGRESS.md`). Until then, `scripts/healthcheck.sh` with an uptime service (see Backups) covers
-"is it up".
+them, shows them (Alerts page, and the "Alerts firing" tile and table on the Health dashboard) and sends the firing
+ones to Alertmanager, which delivers them (next section).
+
+## Alerts
+
+Alertmanager is part of the monitoring stack. Its routing is `deploy/alertmanager/routes.yml`; where messages go comes
+from four settings in `.env`, which `deploy/alertmanager/entrypoint.sh` turns into its configuration each time the
+container starts (the secrets are written to a memory-only folder inside the container, never to disk):
+
+| Setting                                              | What it does                                                                        |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `ALERT_TELEGRAM_BOT_TOKEN`, `ALERT_TELEGRAM_CHAT_ID` | Telegram. Both or neither. A group's chat id starts with a minus sign.              |
+| `ALERT_DISCORD_WEBHOOK_URL`                          | A Discord channel's webhook address (`https://...`).                                |
+| `ALERT_HEARTBEAT_URL`                                | The outside heartbeat (below). `https://` or `http://`.                             |
+| `ALERTMANAGER_PORT`                                  | Where Alertmanager's page listens on `127.0.0.1` (default 9093; use an SSH tunnel). |
+
+A wrong value (a token without a chat id, a chat id that is not a number, an address without `https://`) stops the
+container with a message that names the setting. With none of them set the alerts are still evaluated and visible in
+Prometheus and Alertmanager, and delivered nowhere. These are separate from the room server's own `TELEGRAM_*` and
+`DISCORD_WEBHOOK_URL` in `server.env` (what the server sees from inside), so you may use another bot or channel.
+After changing `.env`: `docker compose up -d alertmanager`.
+
+How alerts are sent: one message per problem, grouped by alert name (the first one after 30 seconds, then at most
+every 5 minutes while it changes, and again every 4 hours while it lasts, every hour for critical ones); a cause
+silences what follows from it (`HostDiskCritical` over `HostDiskLow`, `TetrizzDatabaseOverBudget` over
+`TetrizzDatabaseNearBudget`, `TetrizzServerDown` over the server's other alerts); resolved alerts send a message too.
+To mute something for a while: `docker compose exec alertmanager amtool silence add alertname=HostDiskLow --duration=2h
+--comment="moving data" --alertmanager.url=http://127.0.0.1:9093`.
+
+**The heartbeat.** If the whole VPS is down, Prometheus and Alertmanager are down with it, and nothing on the machine
+can say so. So one alert, `Watchdog`, always fires, and Alertmanager sends it (and only it) to `ALERT_HEARTBEAT_URL`
+once a minute. Create a check at an outside service that alerts you when the pings stop, and put its ping address
+there: for example healthchecks.io (a check with a period of 5 minutes and a grace time of 5 minutes, and Telegram,
+Discord or email as the way it tells you), Better Stack or Uptime Kuma's push monitor. The ping is a POST with the
+alert's JSON in the body; the services above accept that. It silently stops if the machine, Prometheus or Alertmanager
+dies, which is the point.
+
+Two alerts watch the alerting itself: `MonitoringComponentDown` (Loki, Alloy or Alertmanager stopped answering
+Prometheus for 5 minutes) and `AlertDeliveryFailing` (more than 2 failed deliveries in 30 minutes: look at
+`docker compose logs alertmanager` for the reason, usually a wrong token, chat id or webhook address).
 
 Things to know:
 
@@ -141,14 +178,19 @@ Run, with the real tools (Docker was not available to the author's sandbox): Doc
 combinations and refuses to start without the passwords; Caddy 2.11.7 validates the Caddyfile and ran in front of the
 built server and page (headers, caching, `/metrics` blocked, WebSocket upgrade accepted from the site's own origin and
 refused with 403 from another); promtool 3.13.5 checks the Prometheus configuration and the rules and ran their unit
-tests; Loki 3.7.9 and Alloy 1.21.2 validate their files; the Dockerfile's steps were replayed without Docker in a clean
+tests; Loki 3.7.9 and Alloy 1.21.2 validate their files; Alertmanager 0.35.0 and amtool check the rendered configuration for
+three settings and the routes, and a real Alertmanager sent the Watchdog alert to a local webhook and suppressed an alert
+that a cause inhibits; the Dockerfile's steps were replayed without Docker in a clean
 copy that holds only the files it copies (production install, both builds, the runtime layout started, its health check
 command passes); the scripts pass shellcheck and nine tests against a real SQLite database with a stand-in for
 `docker compose`; the dashboards and rules are checked against the server's real `/metrics`.
 
-Not run: `docker build` and `docker compose up` themselves. The `deploy-stack` job in CI does that for the three
-variants (it builds, starts, checks the front door, backs up, restores, and for monitoring also checks the targets,
-the three provisioned dashboards, both datasources and that logs reach Loki). Until it has gone green once, treat
-these as untested: the health check commands inside the Grafana, Loki and Prometheus images, Alloy's use of the Docker
-socket, the node exporter mounts, PostgreSQL with all capabilities dropped but five, and Grafana 13 loading the
-dashboards.
+CI has run the stack: the first run (19 Nov 2026, the Phase 8c-4b zip in a test repository) built and started the
+base and PostgreSQL variants and the whole monitoring variant up to Loki, and showed two faults that are fixed since: a
+check that piped `curl` into `grep -q` failed on the page (curl exit 23 under `pipefail`), and the Loki image, which has
+no shell or wget, can never pass a health check, so Grafana and Alloy waited for it for ever. Everything after those
+points has not run yet in CI: the targets, Loki's readiness, the datasources, the dashboards, Alloy shipping logs,
+the Watchdog reaching a heartbeat address, backup and restore (the second part of each variant). Treat these as
+untested until `deploy-stack` has gone green once: the health check commands inside the Grafana and Alertmanager
+images, Alloy's use of the Docker socket, the node exporter mounts, Alertmanager's memory-only folder (`tmpfs` with
+the `nobody` user), and Grafana 13 loading the dashboards.

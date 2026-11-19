@@ -1,0 +1,36 @@
+# The routing half of Alertmanager's configuration: who hears about what, how often, and which alerts
+# make others redundant. entrypoint.sh puts the receivers (made from the settings in .env) under it.
+#
+# Watchdog is an alert that always fires (deploy/prometheus/rules/tetrizz.yml). It goes only to the
+# outside heartbeat service, once a minute; when the pings stop, that service tells you the machine,
+# Prometheus or Alertmanager is down, which nothing on the machine could say itself.
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: owner
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: ['alertname="Watchdog"']
+      receiver: heartbeat
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 1m
+    - matchers: ['severity="critical"']
+      receiver: owner
+      repeat_interval: 1h
+
+# A cause silences the symptoms that follow it, so one problem is one message.
+inhibit_rules:
+  - source_matchers: ['alertname="HostDiskCritical"']
+    target_matchers: ['alertname="HostDiskLow"']
+  - source_matchers: ['alertname="TetrizzDatabaseOverBudget"']
+    target_matchers: ['alertname="TetrizzDatabaseNearBudget"']
+  - source_matchers: ['alertname="TetrizzServerDown"']
+    target_matchers:
+      [
+        'alertname=~"Tetrizz(DatabaseDown|DatabaseErrors|MaintenanceStalled|EventLoopLag|ConnectionsRefused|NotificationsFailing)"',
+      ]

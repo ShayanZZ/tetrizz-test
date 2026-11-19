@@ -1,5 +1,5 @@
-# Alert rules for the room server and the machine. Prometheus evaluates them and shows them in its
-# own UI (Alerts) and in Grafana; sending them somewhere is a separate step (docs/DOCKER.md).
+# Alert rules for the room server and the machine. Prometheus evaluates them, shows them in its own UI
+# (Alerts) and sends them to Alertmanager, which delivers them (deploy/alertmanager, docs/DOCKER.md).
 # The server's own notifier (Telegram, Discord) covers what the server can see from inside.
 # Tests: promtool test rules deploy/prometheus/tests/tetrizz.test.yml
 groups:
@@ -143,3 +143,32 @@ groups:
         annotations:
           summary: The CPU has been above 90 % for 15 minutes
           description: Busy share is {{ $value | humanizePercentage }}.
+
+  - name: monitoring
+    rules:
+      # Always firing. Alertmanager sends it to the outside heartbeat service once a minute; when the
+      # pings stop, the machine, Prometheus or Alertmanager is down, which nothing here could report.
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: Always firing; proves that alerting works end to end
+          description: Alertmanager sends this to the heartbeat address (ALERT_HEARTBEAT_URL). It never goes to Telegram or Discord.
+
+      - alert: MonitoringComponentDown
+        expr: up{job=~"loki|alloy|alertmanager"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} does not answer"
+          description: Prometheus could not scrape {{ $labels.job }} for 5 minutes. Logs or alert delivery may be missing.
+
+      - alert: AlertDeliveryFailing
+        expr: sum by (integration) (increase(alertmanager_notifications_failed_total[30m])) > 2
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alertmanager cannot deliver to {{ $labels.integration }}"
+          description: More than 2 failed deliveries in 30 minutes. Check the bot token, chat id or webhook address in .env (docker compose logs alertmanager).

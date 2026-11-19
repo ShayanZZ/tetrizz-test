@@ -133,9 +133,16 @@ for svc, spec in full.items():
         system = str(src) in ("/", "/var/run/docker.sock")
         if not inside and not system:
             bad(f"{svc}: volume {src!r} is not a folder of this project (nothing may live only in a container)")
-    wants_check = svc in ("postgres", "prometheus", "loki", "grafana")
+    wants_check = svc in ("postgres", "prometheus", "grafana", "alertmanager")
     if wants_check and "healthcheck" not in spec:
         bad(f"{svc}: no health check")
+    # The Loki image is distroless: nothing can run inside it to ask, so a health check there is
+    # unhealthy for ever (seen in CI), and a service that waits for it never starts.
+    if svc == "loki" and "healthcheck" in spec:
+        bad("loki: has a health check, but its image has no shell, wget or curl (the container would stay unhealthy)")
+    for dep, how in (spec.get("depends_on") or {}).items() if isinstance(spec.get("depends_on"), dict) else []:
+        if dep == "loki" and (how or {}).get("condition") != "service_started":
+            bad(f"{svc}: depends on loki with condition {(how or {}).get('condition')!r}; loki has no health check, use service_started")
 if full and not failures:
     ok(f"{len(full)} services: pinned images, ports, restart, memory limits, bind mounts, health checks")
 
@@ -181,6 +188,92 @@ def prom(binary: str) -> None:
 
 tool("promtool", which("promtool"), prom)
 
+print("alertmanager")
+rules_doc = yaml.safe_load((ROOT / "deploy/prometheus/rules/tetrizz.yml").read_text())
+alert_names = {r["alert"] for g in rules_doc["groups"] for r in g["rules"] if "alert" in r}
+prom_doc = yaml.safe_load((ROOT / "deploy/prometheus/prometheus.yml").read_text())
+routes_doc = yaml.safe_load((ROOT / "deploy/alertmanager/routes.yml").read_text())
+
+targets = [t for am in prom_doc.get("alerting", {}).get("alertmanagers", []) for sc in am.get("static_configs", []) for t in sc.get("targets", [])]
+ok("prometheus.yml sends alerts to alertmanager:9093") if targets == ["alertmanager:9093"] else bad(f"prometheus.yml alerting targets are {targets}, expected ['alertmanager:9093']")
+scraped = {j["job_name"] for j in prom_doc["scrape_configs"]}
+for job in ("loki", "alloy", "alertmanager"):
+    ok(f"prometheus.yml scrapes {job}") if job in scraped else bad(f"prometheus.yml does not scrape {job} (MonitoringComponentDown watches it)")
+ok("Watchdog and MonitoringComponentDown rules exist") if {"Watchdog", "MonitoringComponentDown"} <= alert_names else bad("rules lack Watchdog or MonitoringComponentDown")
+
+# Every alert name an inhibit rule or a route mentions must be a rule that exists.
+mentioned: set[str] = set()
+for rule in routes_doc.get("inhibit_rules", []):
+    for m in rule.get("source_matchers", []) + rule.get("target_matchers", []):
+        for name in re.findall(r"Tetrizz\w+|Host\w+|Watchdog", re.sub(r"^alertname=~?", "", m)):
+            mentioned.add(name)
+        alt = re.search(r"Tetrizz\(([^)]*)\)", m)
+        if alt:
+            mentioned.update("Tetrizz" + part for part in alt.group(1).split("|"))
+            mentioned.discard("Tetrizz")
+mentioned.discard("Tetrizz")
+unknown = sorted(mentioned - alert_names)
+ok(f"every alert named in routes.yml exists as a rule ({len(mentioned)})") if not unknown else bad(f"routes.yml names alerts that have no rule: {unknown}")
+route_names = [r.get("receiver") for r in routes_doc["route"].get("routes", [])]
+ok("routes.yml sends Watchdog to the heartbeat receiver only") if route_names[:1] == ["heartbeat"] and "continue" not in routes_doc["route"]["routes"][0] else bad("the first route must send Watchdog to heartbeat without continue")
+
+am_cmd = " ".join(str(c) for c in (rendered.get("monitoring", {}).get("services", {}).get("alertmanager", {}).get("command") or []))
+ok("alertmanager runs without clustering (--cluster.listen-address=)") if "--cluster.listen-address=" in am_cmd else bad("alertmanager must run with --cluster.listen-address= (one instance; clustering needs a private address)")
+
+
+def entrypoint_render(extra: dict[str, str]) -> tuple[subprocess.CompletedProcess, Path]:
+    out = Path(tempfile.mkdtemp(prefix="am-"))
+    env = {"PATH": os.environ["PATH"], "ALERTMANAGER_RENDER_ONLY": "1", "ALERTMANAGER_RUN_DIR": str(out),
+           "ALERTMANAGER_SOURCE_DIR": str(ROOT / "deploy/alertmanager"), **extra}
+    return subprocess.run(["sh", str(ROOT / "deploy/alertmanager/entrypoint.sh")], cwd=ROOT, capture_output=True, text=True, env=env), out
+
+
+SETTINGS = {
+    "no integrations": {},
+    "telegram": {"ALERT_TELEGRAM_BOT_TOKEN": "123456:ABC-secret", "ALERT_TELEGRAM_CHAT_ID": "-1001234567890"},
+    "everything": {"ALERT_TELEGRAM_BOT_TOKEN": "123456:ABC-secret", "ALERT_TELEGRAM_CHAT_ID": "987654321",
+                   "ALERT_DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/1/secret-webhook", "ALERT_HEARTBEAT_URL": "https://hc-ping.com/secret-uuid"},
+}
+rendered_dirs: dict[str, Path] = {}
+for label, settings in SETTINGS.items():
+    r, out = entrypoint_render(settings)
+    if r.returncode != 0:
+        bad(f"alertmanager entrypoint ({label}): {r.stderr.strip()}")
+        continue
+    text = (out / "alertmanager.yml").read_text()
+    leaked = [v for v in settings.values() if v in text and v.lstrip("-").isdigit() is False]
+    ok(f"alertmanager configuration renders ({label}); no secret in the YAML") if not leaked else bad(f"alertmanager configuration ({label}) contains a secret: {leaked}")
+    rendered_dirs[label] = out
+
+
+def amtool(binary: str) -> None:
+    for label, out in rendered_dirs.items():
+        r = run([binary, "check-config", str(out / "alertmanager.yml")])
+        ok(f"amtool check-config ({label})") if r.returncode == 0 else bad(f"amtool ({label}): {(r.stdout + r.stderr).strip()[-300:]}")
+    cfg = str(rendered_dirs["everything"] / "alertmanager.yml") if "everything" in rendered_dirs else None
+    if cfg is None:
+        return
+    for labels, want in (
+        (["alertname=Watchdog", "severity=none"], "heartbeat"),
+        (["alertname=TetrizzServerDown", "severity=critical"], "owner"),
+        (["alertname=HostDiskLow", "severity=warning"], "owner"),
+        (["alertname=SomethingNew"], "owner"),
+    ):
+        r = run([binary, "config", "routes", "test", f"--config.file={cfg}", *labels])
+        got = r.stdout.strip()
+        ok(f"route {' '.join(labels)} -> {want}") if r.returncode == 0 and got == want else bad(f"route {' '.join(labels)} went to {got!r}, expected {want!r}")
+
+
+tool("amtool", which("amtool"), amtool)
+
+for label, settings, message in (
+    ("a token without a chat id", {"ALERT_TELEGRAM_BOT_TOKEN": "x"}, "ALERT_TELEGRAM_CHAT_ID"),
+    ("a chat id that is not a number", {"ALERT_TELEGRAM_BOT_TOKEN": "x", "ALERT_TELEGRAM_CHAT_ID": "me"}, "must be a number"),
+    ("a Discord address without https", {"ALERT_DISCORD_WEBHOOK_URL": "http://x"}, "https://"),
+):
+    r, _ = entrypoint_render(settings)
+    ok(f"alertmanager entrypoint refuses {label}") if r.returncode != 0 and message in r.stderr else bad(f"alertmanager entrypoint accepted {label}: {r.stderr.strip()}")
+
 print("loki and alloy")
 
 
@@ -202,9 +295,11 @@ print("shell scripts")
 
 
 def shellcheck(binary: str) -> None:
-    scripts = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "scripts").glob("*.sh"))
+    scripts = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "scripts").glob("*.sh")) + ["tests/harness/check_stack.sh"]
     r = run([binary, "-x", "-s", "bash", *scripts])
     ok(f"shellcheck: {len(scripts)} scripts clean") if r.returncode == 0 else bad(f"shellcheck:\n{r.stdout}")
+    r = run([binary, "-s", "sh", "deploy/alertmanager/entrypoint.sh"])
+    ok("shellcheck: alertmanager entrypoint (POSIX sh) clean") if r.returncode == 0 else bad(f"shellcheck (entrypoint):\n{r.stdout}")
 
 
 tool("shellcheck", which("shellcheck"), shellcheck)

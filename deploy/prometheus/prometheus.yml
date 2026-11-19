@@ -7,6 +7,12 @@ global:
 rule_files:
   - /etc/prometheus/rules/*.yml
 
+# Firing alerts go to Alertmanager, which decides who hears about them (deploy/alertmanager).
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 scrape_configs:
   # The room server. It labels its maintenance series with "job" (live, settle); Prometheus keeps
   # its own job label and renames the server's to exported_job, which the rules and dashboards use.
@@ -25,3 +31,19 @@ scrape_configs:
     scrape_interval: 60s
     static_configs:
       - targets: ["localhost:9090"]
+
+  # The logging pipeline and the alert delivery: up == 0 for one of these is the alert MonitoringComponentDown.
+  - job_name: loki
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["loki:3100"]
+
+  - job_name: alloy
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["alloy:12345"]
+
+  - job_name: alertmanager
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["alertmanager:9093"]

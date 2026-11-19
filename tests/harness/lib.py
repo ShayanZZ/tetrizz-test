@@ -36,10 +36,23 @@ SEED_JS = """
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  for (let i = 0; i < %d; i++) Math.random();
   try { if (!localStorage.getItem('tetris_ipop')) localStorage.setItem('tetris_ipop', '9999999999999'); } catch (e) {}
   %s
 })();
 """
+
+
+def boot_draws(target):
+    """How many numbers the harness takes from the seeded Math.random before the page starts.
+
+    The goldens (tests/golden) were recorded from the v1.2.0 page, which drew one number at start to
+    make its random player id. Builds since Phase 8c-4b derive the id from a secret key made with
+    crypto.getRandomValues, so they no longer draw. One number is skipped for them, which keeps
+    every later draw (the piece bags, the bots) the sequence the goldens were recorded with. The
+    legacy page itself draws its own.
+    """
+    return 0 if "legacy" in pathlib.Path(str(target)).parts else 1
 
 
 class Game:
@@ -58,7 +71,7 @@ class Game:
         storage = dict({"tetris_botworker": "0"}, **(storage or {}))
         pre = "".join("try{localStorage.setItem(%s,%s)}catch(e){};" % (json.dumps(k), json.dumps(v))
                       for k, v in storage.items())
-        self.ctx.add_init_script(SEED_JS % (seed, pre))
+        self.ctx.add_init_script(SEED_JS % (seed, boot_draws(target), pre))
         if adapter:
             self.ctx.add_init_script(ADAPTER)
         if extra_init:

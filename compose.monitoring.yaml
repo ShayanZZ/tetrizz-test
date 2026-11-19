@@ -1,8 +1,9 @@
-# Adds Prometheus, Grafana, Loki (logs), Grafana Alloy (ships the containers' logs to Loki) and a
-# node exporter (the machine's CPU, memory and disk). Turns /metrics on in the room server.
+# Adds Prometheus, Alertmanager (delivers the alerts), Grafana, Loki (logs), Grafana Alloy (ships the
+# containers' logs to Loki) and a node exporter (the machine's CPU, memory and disk). Turns /metrics on
+# in the room server.
 #   COMPOSE_FILE=compose.yaml:compose.monitoring.yaml
 # This is the heavy part of the stack (roughly 0.6 to 1.2 GB of memory): see docs/DOCKER.md for what to trim.
-# Nothing here is reachable from the internet: only Grafana publishes a port, and only on 127.0.0.1.
+# Nothing here is reachable from the internet: only Grafana and Alertmanager publish a port, and only on 127.0.0.1.
 # GRAFANA_ADMIN_PASSWORD must be set in .env.
 
 x-logging: &logging
@@ -29,8 +30,8 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - >-
-        mkdir -p /data/prometheus /data/grafana /data/loki /data/alloy &&
-        chown -R 65534:65534 /data/prometheus &&
+        mkdir -p /data/prometheus /data/alertmanager /data/grafana /data/loki /data/alloy &&
+        chown -R 65534:65534 /data/prometheus /data/alertmanager &&
         chown -R 472:0 /data/grafana &&
         chown -R 10001:10001 /data/loki
     volumes:
@@ -100,19 +101,49 @@ services:
     volumes:
       - ./deploy/loki:/etc/loki:ro
       - ./data/loki:/loki
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -q -O /dev/null http://127.0.0.1:3100/ready || curl -fsS -o /dev/null http://127.0.0.1:3100/ready",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
+    # No health check on purpose: the Loki image is distroless (no shell, no wget, no curl), so nothing
+    # can be run inside it to ask. Prometheus scrapes it instead (alert MonitoringComponentDown), and
+    # the services that need it use service_started.
     cap_drop:
       - ALL
     mem_limit: ${LOKI_MEMORY:-256m}
+
+  # Delivers Prometheus's alerts to Telegram and Discord, and sends the always-firing Watchdog alert to an
+  # outside heartbeat service (docs/DOCKER.md, "Alerts"). entrypoint.sh makes its configuration from the
+  # ALERT_* settings in .env; the routing is deploy/alertmanager/routes.yml. No clustering: one instance.
+  alertmanager:
+    <<: *monitor
+    image: prom/alertmanager:v0.35.0
+    depends_on:
+      init-monitoring:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
+    command:
+      - --config.file=/run/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --data.retention=120h
+      - --cluster.listen-address=
+    environment:
+      ALERT_TELEGRAM_BOT_TOKEN: ${ALERT_TELEGRAM_BOT_TOKEN:-}
+      ALERT_TELEGRAM_CHAT_ID: ${ALERT_TELEGRAM_CHAT_ID:-}
+      ALERT_DISCORD_WEBHOOK_URL: ${ALERT_DISCORD_WEBHOOK_URL:-}
+      ALERT_HEARTBEAT_URL: ${ALERT_HEARTBEAT_URL:-}
+    ports:
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./deploy/alertmanager:/etc/alertmanager:ro
+      - ./data/alertmanager:/alertmanager
+    tmpfs:
+      - /run/alertmanager:size=1m,mode=0700,uid=65534,gid=65534
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    cap_drop:
+      - ALL
+    mem_limit: ${ALERTMANAGER_MEMORY:-64m}
 
   # Reads the other containers' logs through the Docker socket (read-only mount; the Docker API
   # behind it is not read-only, so treat this container as trusted). docs/DOCKER.md says how to leave it out.
@@ -121,7 +152,7 @@ services:
     image: grafana/alloy:v1.21.2
     depends_on:
       loki:
-        condition: service_healthy
+        condition: service_started
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
@@ -142,7 +173,7 @@ services:
       prometheus:
         condition: service_healthy
       loki:
-        condition: service_healthy
+        condition: service_started
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}

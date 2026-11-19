@@ -33,6 +33,7 @@ HTTPS_PORT=18443
 GRAFANA_PORT=13000
 POSTGRES_PASSWORD=$pw
 GRAFANA_ADMIN_PASSWORD=$pw
+ALERT_HEARTBEAT_URL=http://heartbeat-sink:8080/ping
 ENV
 site=http://127.0.0.1:18080
 fail() {
@@ -43,15 +44,34 @@ step() { printf '\n== %s\n' "$*"; }
 cleanup() {
   status=$?
   if ((status != 0)); then
-    echo "--- container state and the last log lines ---"
+    echo "--- container state, health check output and the last log lines ---"
     docker compose ps --all || true
-    docker compose logs --tail=60 || true
+    for id in $(docker compose ps -q 2>/dev/null); do
+      docker inspect -f '{{.Name}} health: {{json .State.Health}}' "$id" 2>/dev/null | cut -c1-700 || true
+    done
+    docker compose logs --tail=30 --no-log-prefix 2>&1 | cut -c1-300 || true
   fi
+  docker rm -f heartbeat-sink >/dev/null 2>&1 || true
   docker compose down -v --remove-orphans || true
   rm -f .env
   exit "$status"
 }
 trap cleanup EXIT
+
+# check_body PATTERN MESSAGE CURL_ARGS...: fetches the whole answer first and looks in it afterwards.
+# Never `curl | grep -q`: under pipefail that fails when grep stops reading early (curl exit 23, seen in
+# CI on the page's index.html, which is bigger than a pipe buffer).
+check_body() {
+  local pattern=$1 message=$2 text
+  shift 2
+  text=$(curl -fsS "$@") || fail "$message (the request failed)"
+  grep -qF -- "$pattern" <<<"$text" || fail "$message"
+}
+# count PATTERN TEXT: how many times the pattern occurs (0 is a fine answer).
+count() { { grep -o -- "$1" <<<"$2" || true; } | wc -l; }
+# inside URL: a GET made from inside a container that has wget (Prometheus's image), because
+# the Loki image has no shell or wget to ask with.
+inside() { docker compose exec -T prometheus wget -qO- "$1"; }
 
 # shellcheck source=scripts/lib.sh
 source scripts/lib.sh
@@ -63,10 +83,10 @@ for service in $(docker compose config --services | grep -v '^init'); do
 done
 
 step "the front door"
-curl -fsS "$site/healthz" | grep -q '"ok"' || fail "/healthz"
-curl -fsS "$site/readyz" | grep -q '"database":"ok"' || fail "/readyz does not report the database as ok"
-curl -fsS "$site/config.json" | grep -q '"url":"/"' || fail "/config.json must point the page at its own address"
-curl -fsS "$site/" | grep -qi '<title>' || fail "the page is not served"
+check_body '"ok"' "/healthz" "$site/healthz"
+check_body '"database":"ok"' "/readyz does not report the database as ok" "$site/readyz"
+check_body '"url":"/"' "/config.json must point the page at its own address" "$site/config.json"
+check_body '<title>' "the page is not served" "$site/"
 [[ $(curl -s -o /dev/null -w '%{http_code}' "$site/metrics") == 404 ]] || fail "/metrics must not be reachable through Caddy"
 [[ $(curl -s -o /dev/null -w '%{http_code}' -H 'Upgrade: websocket' -H 'Connection: Upgrade' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' -H 'Origin: http://evil.example' "$site/ws") == 403 ]] ||
   fail "a socket from a foreign origin must be refused with 403"
@@ -79,37 +99,66 @@ bash scripts/backup.sh
 file=$(find backups/daily -type f -name 'tetrizz-*' | head -n 1)
 [[ -s $file ]] || fail "no backup file"
 bash scripts/restore.sh --yes "$file"
-curl -fsS "$site/readyz" | grep -q '"database":"ok"' || fail "the database is not ok after the restore"
+check_body '"database":"ok"' "the database is not ok after the restore" "$site/readyz"
 bash scripts/healthcheck.sh
 
 if [[ $variant == monitoring ]]; then
-  step "Prometheus scrapes the server"
-  for _ in $(seq 1 30); do
-    docker compose exec -T prometheus wget -qO- http://127.0.0.1:9090/api/v1/targets | grep -q '"health":"up"' && break
+  step "Prometheus scrapes the server, the machine and the logging and alerting parts"
+  targets=""
+  for _ in $(seq 1 40); do
+    targets=$(inside http://127.0.0.1:9090/api/v1/targets 2>/dev/null) || targets=""
+    up=$(count '"health":"up"' "$targets")
+    all=$(count '"health":"' "$targets")
+    if ((all >= 6 && up == all)); then break; fi
     sleep 3
   done
-  targets=$(docker compose exec -T prometheus wget -qO- http://127.0.0.1:9090/api/v1/targets)
-  grep -q '"job":"tetrizz"' <<<"$targets" || fail "no tetrizz target"
-  [[ $(grep -o '"health":"up"' <<<"$targets" | wc -l) -ge 3 ]] || fail "targets are not all up: $targets"
+  for job in tetrizz node prometheus loki alloy alertmanager; do
+    grep -qF "\"job\":\"$job\"" <<<"$targets" || fail "no $job target: $targets"
+  done
+  ((up == all)) || fail "targets are not all up: $targets"
+  grep -qF 'alertmanager:9093' <<<"$(inside http://127.0.0.1:9090/api/v1/alertmanagers)" || fail "Prometheus does not know Alertmanager"
+
+  step "Loki is ready"
+  for _ in $(seq 1 40); do
+    [[ $(inside http://loki:3100/ready 2>/dev/null || true) == *ready* ]] && break
+    sleep 3
+  done
+  [[ $(inside http://loki:3100/ready 2>/dev/null || true) == *ready* ]] || fail "Loki does not report ready"
 
   step "Grafana has the datasources and the three dashboards"
   g=http://127.0.0.1:13000
   auth="admin:$pw"
-  curl -fsS -u "$auth" "$g/api/health" >/dev/null || fail "Grafana does not answer"
+  check_body '"database"' "Grafana does not answer" -u "$auth" "$g/api/health"
   [[ $(curl -fsS -u "$auth" "$g/api/search?type=dash-db" | grep -o '"uid":"tetrizz-' | wc -l) -eq 3 ]] || fail "the three dashboards are not provisioned"
-  curl -fsS -u "$auth" "$g/api/datasources/uid/prometheus/health" | grep -q '"status":"OK"' || fail "Prometheus datasource"
-  curl -fsS -u "$auth" "$g/api/datasources/uid/loki/health" | grep -q '"status":"OK"' || fail "Loki datasource"
+  check_body '"status":"OK"' "Prometheus datasource" -u "$auth" "$g/api/datasources/uid/prometheus/health"
+  check_body '"status":"OK"' "Loki datasource" -u "$auth" "$g/api/datasources/uid/loki/health"
 
   step "Alloy ships the logs to Loki"
-  for _ in $(seq 1 30); do
-    docker compose exec -T loki wget -qO- http://127.0.0.1:3100/loki/api/v1/label/service/values | grep -q '"server"' && break
+  for _ in $(seq 1 40); do
+    [[ $(inside http://loki:3100/loki/api/v1/label/service/values 2>/dev/null || true) == *'"server"'* ]] && break
     sleep 3
   done
-  docker compose exec -T loki wget -qO- http://127.0.0.1:3100/loki/api/v1/label/service/values | grep -q '"server"' || fail "no logs of the server in Loki"
+  [[ $(inside http://loki:3100/loki/api/v1/label/service/values 2>/dev/null || true) == *'"server"'* ]] || fail "no logs of the server in Loki"
 
   step "Grafana's dashboards can query the server's metrics"
   q=$(curl -fsS -u "$auth" "$g/api/datasources/proxy/uid/prometheus/api/v1/query?query=tetrizz_db_up")
-  grep -q '"value"' <<<"$q" || fail "tetrizz_db_up has no value: $q"
+  grep -qF '"value"' <<<"$q" || fail "tetrizz_db_up has no value: $q"
+
+  step "the Watchdog alert travels Prometheus -> Alertmanager -> the heartbeat address"
+  net=$(docker network ls --filter label=com.docker.compose.project=tetrizz --format '{{.Name}}' | head -n 1)
+  [[ -n $net ]] || fail "no compose network"
+  docker run -d --name heartbeat-sink --network "$net" busybox:1.37.0 sh -c \
+    'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n" | nc -l -p 8080 >>/tmp/hits; done' >/dev/null
+  hits=""
+  for _ in $(seq 1 60); do
+    hits=$(docker exec heartbeat-sink cat /tmp/hits 2>/dev/null || true)
+    grep -qF 'Watchdog' <<<"$hits" && break
+    sleep 3
+  done
+  grep -qF 'POST /ping' <<<"$hits" || fail "the heartbeat address got no POST (alerts do not reach Alertmanager's webhook): $hits"
+  grep -qF 'Watchdog' <<<"$hits" || fail "the heartbeat request is not the Watchdog alert: $hits"
+  failed=$(inside http://alertmanager:9093/metrics 2>/dev/null | grep -F 'alertmanager_notifications_failed_total{integration="webhook"}' | awk '{print $2}' || true)
+  echo "webhook deliveries failed so far: ${failed:-?}"
 fi
 
 step "all good ($variant)"

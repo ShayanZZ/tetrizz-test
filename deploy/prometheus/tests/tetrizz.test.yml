@@ -85,3 +85,54 @@ tests:
             exp_annotations:
               summary: Less than 15 % of the disk is free
               description: Free space on / is 10%. Old logs, backups and Docker images are the usual suspects.
+
+  - interval: 30s
+    input_series:
+      - series: 'up{job="loki"}'
+        values: "1x4 0x20"
+      - series: 'up{job="alertmanager"}'
+        values: "1x24"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: MonitoringComponentDown
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: MonitoringComponentDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: loki
+            exp_annotations:
+              summary: loki does not answer
+              description: Prometheus could not scrape loki for 5 minutes. Logs or alert delivery may be missing.
+
+  - interval: 30s
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: Watchdog
+        exp_alerts:
+          - exp_labels:
+              severity: none
+            exp_annotations:
+              summary: Always firing; proves that alerting works end to end
+              description: Alertmanager sends this to the heartbeat address (ALERT_HEARTBEAT_URL). It never goes to Telegram or Discord.
+
+  - interval: 1m
+    input_series:
+      - series: 'alertmanager_notifications_failed_total{integration="telegram"}'
+        values: "0 0 0 0 0 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80"
+      - series: 'alertmanager_notifications_failed_total{integration="discord"}'
+        values: "0x20"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: AlertDeliveryFailing
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: AlertDeliveryFailing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              integration: telegram
+            exp_annotations:
+              summary: Alertmanager cannot deliver to telegram
+              description: More than 2 failed deliveries in 30 minutes. Check the bot token, chat id or webhook address in .env (docker compose logs alertmanager).
