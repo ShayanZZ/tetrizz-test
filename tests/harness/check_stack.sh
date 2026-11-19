@@ -147,8 +147,16 @@ if [[ $variant == monitoring ]]; then
   step "the Watchdog alert travels Prometheus -> Alertmanager -> the heartbeat address"
   net=$(docker network ls --filter label=com.docker.compose.project=tetrizz --format '{{.Name}}' | head -n 1)
   [[ -n $net ]] || fail "no compose network"
-  docker run -d --name heartbeat-sink --network "$net" busybox:1.37.0 sh -c \
-    'while true; do printf "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n" | nc -l -p 8080 >>/tmp/hits; done' >/dev/null
+  # A sink that reads the whole request. (A busybox `nc -l` loop answered, closed and cut the body off
+  # after the headers, so the check never saw the Watchdog even though Alertmanager logged success.)
+  # Node is already in the server image that was just built, so nothing else is pulled.
+  docker run -d --name heartbeat-sink --network "$net" --entrypoint node tetrizz-server:local -e '
+    const http = require("http"), fs = require("fs");
+    http.createServer((q, s) => {
+      let b = "";
+      q.on("data", (c) => { b += c; });
+      q.on("end", () => { fs.appendFileSync("/tmp/hits", q.method + " " + q.url + "\n" + b + "\n"); s.end("ok"); });
+    }).listen(8080);' >/dev/null
   hits=""
   for _ in $(seq 1 60); do
     hits=$(docker exec heartbeat-sink cat /tmp/hits 2>/dev/null || true)
