@@ -52,10 +52,12 @@ export interface ServerSocketDeps {
   later(task: () => void, ms: number): () => void;
   /** The build's version, sent in `hello` for the server's records. */
   appVersion: string;
+  /** The player key that proves the id in `hello` (`identity.ts`); read at each connection. */
+  key(): string;
   warn(scope: string, error: unknown): void;
 }
 
-export type ConnectResult = "ok" | "unreachable" | "version";
+export type ConnectResult = "ok" | "unreachable" | "version" | "identity";
 
 /** What a request ends with: the server's answer, or the reason none came. */
 export type RequestResult =
@@ -165,6 +167,7 @@ export function createServerSocket(deps: ServerSocketDeps): ServerSocket {
               v: PROTOCOL_VERSION,
               app: deps.appVersion,
               id: identity.id,
+              key: deps.key(),
               name: identity.name,
             }),
           );
@@ -180,7 +183,15 @@ export function createServerSocket(deps: ServerSocketDeps): ServerSocket {
               }
               settle("ok");
             } else if (message?.t === "refused") {
-              settle(message.reason === "version" ? "version" : "unreachable");
+              if (message.reason === "identity") {
+                deps.warn(
+                  "net/server-socket.identity",
+                  new Error("the server refused the player key"),
+                );
+                settle("identity");
+              } else {
+                settle(message.reason === "version" ? "version" : "unreachable");
+              }
             }
             return;
           }

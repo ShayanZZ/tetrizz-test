@@ -17,6 +17,8 @@ Checks:
 """
 import functools, http.server, pathlib, sys, threading, time
 from playwright.sync_api import sync_playwright
+from lib import player_key, slow_down_waits
+slow_down_waits()
 
 FAKE_MQTT = """
 (() => {
@@ -61,7 +63,7 @@ def serve(root):
 
 def open_page(ctx, url, name):
     page = ctx.new_page()
-    page.add_init_script("try{sessionStorage.setItem('tetris_pid','pid-%s')}catch(e){}" % name.lower())
+    page.add_init_script("try{sessionStorage.setItem('tetris_pkey','%s')}catch(e){}" % player_key(name.lower()))
     page.errors = []
     page.on("pageerror", lambda e: page.errors.append(str(e)))
     page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(("http://127.0.0.1:", "data:", "blob:")) else r.fulfill(status=200, body="", content_type="text/css"))

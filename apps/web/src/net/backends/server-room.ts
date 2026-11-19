@@ -57,6 +57,8 @@ export function createServerRoom(deps: ServerRoomDeps): RoomBackend {
     async join(request): Promise<JoinRoomResult> {
       const connected = await socket.connect({ id: request.myId, name: request.myName });
       if (connected === "version") return { ok: false, reason: "version" };
+      // The server does not accept this page's identity: a fault to show, not a server to give up on.
+      if (connected === "identity") return { ok: false, reason: "failed" };
       if (connected !== "ok") return { ok: false, reason: "unreachable" };
       const answer = await socket.request({
         t: "join",

@@ -11,6 +11,7 @@
  *
  * Nothing here touches the DOM, the network or any other package.
  */
+import { keyMatchesId } from "./identity";
 import { nextHostCandidate } from "./room";
 import {
   parseClientMessage,
@@ -367,6 +368,12 @@ export function createReferenceServer(options: ReferenceServerOptions = {}): Ref
             if (m.t !== "hello") return conn.end();
             if (checkPeerVersion(m.v) !== "ok") {
               conn.send({ t: "refused", reason: "version", v: PROTOCOL_VERSION });
+              return conn.end();
+            }
+            // The id is public; the key is what proves it is this page's. Without that proof a
+            // page could take another player's seat, or throw the player out of the room.
+            if (!keyMatchesId(m.key, m.id)) {
+              conn.send({ t: "refused", reason: "identity" });
               return conn.end();
             }
             byId.get(m.id)?.end();

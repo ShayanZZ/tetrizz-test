@@ -123,6 +123,8 @@ export interface ParsedTelemetry {
   batch: TelemetryBatch;
   /** Items that did not fit the format and were left out. */
   rejected: number;
+  /** The sender's player key, to be checked against `batch.playerId` and never stored or logged. */
+  key: string;
 }
 
 export type TelemetryParseResult =
@@ -356,6 +358,9 @@ export function parseTelemetryBatch(body: unknown): TelemetryParseResult {
   if (v > TELEMETRY_VERSION) return { ok: false, error: "newer format" };
   const playerId = text(body.playerId, ID);
   if (playerId === undefined) return { ok: false, error: "playerId is not valid" };
+  // Not part of the batch: the server checks it against the id and then forgets it.
+  const key = body.key;
+  if (typeof key !== "string" || key.length > 128) return { ok: false, error: "key is missing" };
   const sentAt = when(body.sentAt);
   if (sentAt === undefined) return { ok: false, error: "sentAt is not valid" };
 
@@ -385,7 +390,7 @@ export function parseTelemetryBatch(body: unknown): TelemetryParseResult {
     if (session) batch.session = session;
     else rejected++;
   }
-  return { ok: true, value: { batch, rejected } };
+  return { ok: true, value: { batch, rejected, key } };
 }
 
 /** Whether `value` looks like a player id (also the shape of the id in `/api/v1/players/<id>`). */

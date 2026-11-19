@@ -147,6 +147,7 @@ export interface BroadcastEnvelope {
 
 export * from "./transport";
 export * from "./room";
+export * from "./identity";
 export * from "./server";
 export * from "./server-room";
 export * from "./telemetry";

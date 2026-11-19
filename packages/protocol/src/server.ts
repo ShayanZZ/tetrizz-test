@@ -2,7 +2,8 @@
  * The conversation between a game page and TetriZZ's own server, over one WebSocket.
  *
  * Every frame is one JSON text message with a `t` field naming its kind. The page speaks first
- * (`hello`); the server answers `welcome` or refuses the connection. After that the page asks for a
+ * (`hello`, with its player id and the key that id derives from, see `identity.ts`); the server
+ * answers `welcome` or refuses the connection. After that the page asks for a
  * room (`create`, `join`) with a request id (`rid`) and the server answers with the same `rid`;
  * everything else is a one-way message.
  *
@@ -49,11 +50,19 @@ export interface ServerSeat {
 
 /** Why a request was refused. */
 export type ServerRefusal =
-  "not-found" | "password" | "wrong-password" | "version" | "exists" | "full" | "busy" | "invalid";
+  | "not-found"
+  | "password"
+  | "wrong-password"
+  | "version"
+  | "identity"
+  | "exists"
+  | "full"
+  | "busy"
+  | "invalid";
 
 /** Page to server. */
 export type ClientToServer =
-  | { t: "hello"; v: number; app: string; id: string; name: string }
+  | { t: "hello"; v: number; app: string; id: string; key: string; name: string }
   | {
       t: "create";
       rid: number;
@@ -145,6 +154,9 @@ export function parseClientMessage(text: unknown): ClientToServer | null {
         isText(m.app, 32) &&
         isText(m.id, 64) &&
         m.id.length > 0 &&
+        // A missing or wrong key is the server's to refuse (`identity`), so a page that sends none
+        // is told why instead of being dropped.
+        (m.key === undefined || isText(m.key, 128)) &&
         isText(m.name, SERVER_MAX_NAME * 4)
         ? (m as ClientToServer)
         : null;

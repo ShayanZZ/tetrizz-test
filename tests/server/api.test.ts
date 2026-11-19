@@ -4,6 +4,7 @@
  */
 import { request as httpRequest } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
+import { playerIdFromKey, sha256Hex } from "@tetrizz/protocol";
 import { createServerApp, type ServerApp } from "../../apps/server/src/app";
 import { loadConfig, type ServerConfig } from "../../apps/server/src/config";
 import { openRepository, type Repository } from "../../apps/server/src/db";
@@ -11,8 +12,16 @@ import { openRepository, type Repository } from "../../apps/server/src/db";
 const NOW = Date.parse("2026-11-16T12:00:00Z");
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
-const A = "aaaaaaaa-1111-4222-8333-444444444444";
-const B = "bbbbbbbb-1111-4222-8333-444444444444";
+/** Every player in these tests is a secret key and the id derived from it, as the page makes them. */
+const KEYS = new Map<string, string>();
+function person(seed: string): string {
+  const key = sha256Hex(`api-test:${seed}`);
+  const id = playerIdFromKey(key);
+  KEYS.set(id, key);
+  return id;
+}
+const A = person("a");
+const B = person("b");
 
 interface Reply {
   status: number;
@@ -25,9 +34,18 @@ function call(
   port: number,
   method: string,
   path: string,
-  options: { body?: unknown; type?: string; origin?: string | null; raw?: string } = {},
+  options: {
+    body?: unknown;
+    type?: string;
+    origin?: string | null;
+    raw?: string;
+    /** Sent as `Authorization: Bearer`; defaults to the key of the player in the path. */
+    key?: string | null;
+  } = {},
 ): Promise<Reply> {
   const origin = options.origin === undefined ? `http://127.0.0.1:${port}` : options.origin;
+  const owner = /\/api\/v1\/players\/([^/]+)/.exec(path)?.[1];
+  const key = options.key === undefined ? (owner ? KEYS.get(owner) : undefined) : options.key;
   const payload =
     options.raw !== undefined
       ? options.raw
@@ -43,6 +61,7 @@ function call(
         path,
         headers: {
           ...(origin === null ? {} : { origin }),
+          ...(key ? { authorization: `Bearer ${key}` } : {}),
           ...(payload !== undefined
             ? {
                 "content-type": options.type ?? "application/json",
@@ -106,12 +125,10 @@ afterEach(async () => {
   for (const repo of repos.splice(0)) await repo.close().catch(() => {});
 });
 
-const batch = (extra: Record<string, unknown> = {}) => ({
-  v: 1,
-  playerId: A,
-  sentAt: NOW,
-  ...extra,
-});
+const batch = (extra: Record<string, unknown> = {}) => {
+  const playerId = (extra.playerId as string | undefined) ?? A;
+  return { v: 1, playerId, key: KEYS.get(playerId), sentAt: NOW, ...extra };
+};
 const ev = (n: number, extra: Record<string, unknown> = {}) => ({
   id: `evt-${String(n).padStart(8, "0")}`,
   kind: "game_start",
@@ -385,7 +402,7 @@ describe("who may call, and how often", () => {
     });
     expect(pre.status).toBe(204);
     expect(pre.headers["access-control-allow-methods"]).toContain("DELETE");
-    expect(pre.headers["access-control-allow-headers"]).toBe("Content-Type");
+    expect(pre.headers["access-control-allow-headers"]).toBe("Content-Type, Authorization");
     const badPre = await call(port, "OPTIONS", "/api/v1/telemetry", {
       origin: "https://evil.example",
     });
@@ -422,7 +439,7 @@ describe("who may call, and how often", () => {
     const { port, app } = await start({
       telemetry: { requestsPerMinute: 600, requestBurst: 50, newPlayersPerHour: 2 },
     });
-    const id = (n: number) => `player-${String(n).padStart(8, "0")}`;
+    const id = (n: number) => person(`new-${n}`);
     const send = (n: number) =>
       call(port, "POST", "/api/v1/telemetry", { body: batch({ playerId: id(n) }) });
     expect((await send(1)).status).toBe(200);
@@ -505,5 +522,64 @@ describe("when the database fails or is missing", () => {
     const repo = app.repository;
     await app.shutdown();
     await expect(repo?.ping()).rejects.toThrow();
+  });
+});
+
+describe("the API: whose data a request may touch", () => {
+  it("refuses a batch whose key is missing or does not belong to its player, and stores nothing", async () => {
+    const { port, repo, app } = await start();
+    const keyOfB = KEYS.get(B);
+    const post = (body: unknown) => call(port, "POST", "/api/v1/telemetry", { body });
+
+    const stolen = await post(batch({ key: keyOfB, events: [ev(1)] }));
+    expect(stolen).toMatchObject({ status: 403, json: { ok: false, error: "identity" } });
+    expect((await post(batch({ key: "short", events: [ev(2)] }))).status).toBe(403);
+    expect((await post(batch({ key: undefined, events: [ev(3)] }))).status).toBe(400);
+    expect(await repo.counts()).toMatchObject({ players: 0, events: 0, games: 0 });
+    expect(app.apiStats()).toMatchObject({ identityRefused: 2, invalid: 1 });
+  });
+
+  it("lets only the holder of the key silence or erase a player", async () => {
+    const { port, repo, app } = await start();
+    await call(port, "POST", "/api/v1/telemetry", { body: batch({ events: [ev(1)] }) });
+    const path = `/api/v1/players/${A}`;
+    const strangers = [KEYS.get(B), null, "nonsense"];
+
+    for (const key of strangers) {
+      const silence = await call(port, "PUT", `${path}/telemetry`, { body: { optOut: true }, key });
+      expect(silence).toMatchObject({ status: 403, json: { error: "identity" } });
+      const erase = await call(port, "DELETE", path, { key });
+      expect(erase).toMatchObject({ status: 403, json: { error: "identity" } });
+    }
+    expect(await repo.getPlayer(A)).not.toBeNull();
+    const still = await call(port, "POST", "/api/v1/telemetry", {
+      body: batch({ events: [ev(2)] }),
+    });
+    expect(still.json.optedOut).toBeFalsy();
+    expect(still.json).toMatchObject({ stored: { events: 1 } });
+    expect(app.apiStats()).toMatchObject({ identityRefused: 6, playersDeleted: 0 });
+
+    expect((await call(port, "DELETE", path)).status).toBe(200);
+    expect(await repo.getPlayer(A)).toBeNull();
+  });
+
+  it("never stores the key", async () => {
+    const { port, repo } = await start();
+    await call(port, "POST", "/api/v1/telemetry", {
+      body: batch({
+        events: [ev(1)],
+        games: [game()],
+        session: { id: "sess-0001", startedAt: NOW - 1000 },
+        device: { deviceClass: "desktop" },
+      }),
+    });
+    const stored = JSON.stringify([
+      await repo.getPlayer(A),
+      await repo.listEvents(A, 10),
+      await repo.listDevices(A),
+      await repo.getGame("game-00000001"),
+      await repo.getSession("sess-0001"),
+    ]);
+    expect(stored).not.toContain(KEYS.get(A));
   });
 });

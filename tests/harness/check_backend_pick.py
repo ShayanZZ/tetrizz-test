@@ -20,6 +20,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from check_relay_handshake import FAKE_MQTT, HOOK, open_page, players_text, serve, to_lobby  # noqa: E402
+from lib import GUESTY_ID, HOSTY_ID
 
 KEY = "sb_publishable_" + "x" * 41
 FAKE_SUPABASE = """
@@ -166,18 +167,18 @@ def main(dist):
         host.evaluate("() => document.getElementById('btnCreateRoom').click()")
         settle(host, 1800)
         rooms = host.evaluate("() => window.__sb.rows.rooms")
-        record("AUTO creates the room row on Supabase", len(rooms) == 1 and rooms[0]["host_id"] == "pid-hosty", rooms)
+        record("AUTO creates the room row on Supabase", len(rooms) == 1 and rooms[0]["host_id"] == HOSTY_ID, rooms)
         record("the relay publishes nothing", host.evaluate("() => window.__published.length") == 0)
         listeners = host.evaluate("() => window.__sb.channels[0].listeners.map(l => l.type === 'postgres_changes' ? l.filter.table + ':' + l.filter.event : 'broadcast').filter((v, i, a) => v !== 'broadcast' || a.indexOf(v) === i)")
         record("the channel listens to seats, room update and room delete", listeners[:3] == ["players:*", "rooms:UPDATE", "rooms:DELETE"] and "broadcast" in listeners, listeners)
         room_id = rooms[0]["id"] if rooms else ""
-        host.evaluate("(r) => { const S = window.__sb; const row = { id: 'pid-guesty', room_id: r, username: 'GUESTY', state: { role: 'player', joined: Date.now() } }; S.rows.players.push(row); S.emit('players', 'INSERT', row, null); }", room_id)
+        host.evaluate("(r) => { const S = window.__sb; const row = { id: '111a296b37f4ee803aed12a70ba15ac3', room_id: r, username: 'GUESTY', state: { role: 'player', joined: Date.now() } }; S.rows.players.push(row); S.emit('players', 'INSERT', row, null); }", room_id)
         settle(host, 600)
         record("a new seat shows on the list", "GUESTY" in players_text(host), players_text(host))
-        host.evaluate("() => { const S = window.__sb; const row = S.rows.players.find(p => p.id === 'pid-guesty'); row.state = { ...row.state, ready: true }; S.emit('players', 'UPDATE', row, null); }")
+        host.evaluate("() => { const S = window.__sb; const row = S.rows.players.find(p => p.id === '111a296b37f4ee803aed12a70ba15ac3'); row.state = { ...row.state, ready: true }; S.emit('players', 'UPDATE', row, null); }")
         settle(host, 600)
         record("the guest's ready flag shows", "READY" in players_text(host).upper(), players_text(host))
-        host.evaluate("() => { const S = window.__sb; S.rows.rooms[0].host_id = 'pid-guesty'; S.emit('rooms', 'UPDATE', S.rows.rooms[0], null); }")
+        host.evaluate("() => { const S = window.__sb; S.rows.rooms[0].host_id = '111a296b37f4ee803aed12a70ba15ac3'; S.emit('rooms', 'UPDATE', S.rows.rooms[0], null); }")
         settle(host, 600)
         text = players_text(host)
         record(
@@ -243,7 +244,7 @@ def main(dist):
         page = guest_page(ctx)
         join(page, "LOCKAB")
         page.wait_for_selector("#cfPwd", timeout=5000)
-        record("a protected room asks for the password and does not seat the guest", not any(p["id"] == "pid-guesty" for p in page.evaluate("() => window.__sb.rows.players")))
+        record("a protected room asks for the password and does not seat the guest", not any(p["id"] == GUESTY_ID for p in page.evaluate("() => window.__sb.rows.players")))
         page.evaluate(SUBMIT_PROMPT, "wrong")
         settle(page, 600)
         record("a wrong password is refused", "wrong password" in page.evaluate(BODY).lower())

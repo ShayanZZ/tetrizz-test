@@ -27,7 +27,7 @@ export const STORAGE_KEYS = [
   "tetris_muted",
   "tetris_olself",
   "tetris_online_backend",
-  "tetris_pid",
+  "tetris_pkey",
   "tetris_practice",
   "tetris_replays",
   "tetris_schema",

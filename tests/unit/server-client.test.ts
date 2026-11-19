@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createReferenceServer,
+  playerIdFromKey,
   PROTOCOL_VERSION,
   type ReferenceServer,
   type RoomBackend,
@@ -17,6 +18,7 @@ import {
   type SocketLike,
 } from "../../apps/web/src/net/server-socket";
 import { createServerTransport } from "../../apps/web/src/net/transports/server-transport";
+import { fromWire, player as testPlayer, toWire } from "../helpers/identity";
 
 /** Timers that run only when the test says so. */
 function fakeTimers() {
@@ -42,19 +44,33 @@ function fakeTimers() {
   };
 }
 
-/** A WebSocket whose other end is the reference server; frames arrive on a microtask. */
-function serverSocketFor(server: ReferenceServer): SocketLike {
+function toServer(data: string): string {
+  const message = JSON.parse(data) as Record<string, unknown>;
+  if (message.t === "hello" && typeof message.id === "string") {
+    const who = testPlayer(message.id);
+    return JSON.stringify({ ...message, id: who.id, key: who.key });
+  }
+  return JSON.stringify(toWire(message));
+}
+
+/**
+ * A WebSocket whose other end is the reference server; frames arrive on a microtask. The tests name
+ * their players ("a", "b"); by default the wire carries their ids and keys, as `helpers/identity.ts`
+ * explains, and the hello a page sends is completed with the named player's real key. `raw` leaves
+ * every frame exactly as the page wrote it.
+ */
+function serverSocketFor(server: ReferenceServer, raw = false): SocketLike {
   const socket: SocketLike = {
     readyState: 0,
     onopen: null,
     onmessage: null,
     onclose: null,
     onerror: null,
-    send: (data) => link.receive(data),
+    send: (data) => link.receive(raw ? data : toServer(data)),
     close: () => link.close(),
   };
   const link = server.connect(
-    (text) => queueMicrotask(() => socket.onmessage?.({ data: text })),
+    (text) => queueMicrotask(() => socket.onmessage?.({ data: raw ? text : fromWire(text) })),
     () =>
       queueMicrotask(() => {
         (socket as { readyState: number }).readyState = 3;
@@ -75,6 +91,7 @@ function newClient(server: ReferenceServer, timers = fakeTimers()) {
     createSocket: () => serverSocketFor(server),
     later: timers.later,
     appVersion: "test",
+    key: () => "",
     warn: (scope) => warnings.push(scope),
   });
   return { socket, timers, warnings };
@@ -159,10 +176,44 @@ describe("server socket", () => {
       },
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     expect(await sock.connect({ id: "a", name: "A" })).toBe("version");
     expect(sock.isOpen()).toBe(false);
+  });
+
+  it("sends its key in hello, and reports a refused identity as that, not as an unreachable server", async () => {
+    const server = createReferenceServer();
+    const timers = fakeTimers();
+    const warnings: string[] = [];
+    const sent: string[] = [];
+    const make = (key: string) =>
+      createServerSocket({
+        url: () => "ws://test/ws",
+        createSocket: () => {
+          const socket = serverSocketFor(server, true);
+          const send = socket.send;
+          socket.send = (data) => {
+            sent.push(data);
+            send(data);
+          };
+          return socket;
+        },
+        later: timers.later,
+        appVersion: "test",
+        key: () => key,
+        warn: (scope) => warnings.push(scope),
+      });
+
+    const key = "0123456789abcdef".repeat(4);
+    const id = playerIdFromKey(key);
+    expect(await make(key).connect({ id, name: "A" })).toBe("ok");
+    expect(JSON.parse(sent[0]!)).toMatchObject({ t: "hello", id, key, name: "A" });
+
+    expect(await make("f".repeat(64)).connect({ id, name: "A" })).toBe("identity");
+    expect(await make("").connect({ id, name: "A" })).toBe("identity");
+    expect(warnings).toEqual(["net/server-socket.identity", "net/server-socket.identity"]);
   });
 
   it("is unreachable when the socket never opens, errors, or cannot be made", async () => {
@@ -181,6 +232,7 @@ describe("server socket", () => {
       createSocket: () => deaf,
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     const waiting = slow.connect({ id: "a", name: "A" });
@@ -193,6 +245,7 @@ describe("server socket", () => {
       createSocket: () => failing,
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     const pending = errored.connect({ id: "a", name: "A" });
@@ -207,6 +260,7 @@ describe("server socket", () => {
       },
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: (scope) => warned.push(scope),
     });
     expect(await broken.connect({ id: "a", name: "A" })).toBe("unreachable");
@@ -232,6 +286,7 @@ describe("server socket", () => {
       },
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     await mute.connect({ id: "m", name: "M" });
@@ -267,6 +322,7 @@ describe("server socket", () => {
       },
       later: fakeTimers().later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     failing.onClose(() => closes++);
@@ -328,7 +384,7 @@ describe("server transport", () => {
       players: [],
     });
     await settled();
-    expect(server.seatsOf("R")?.map((p) => p.id)).toEqual(["host"]);
+    expect(server.seatsOf("R")?.map((p) => fromWire(p.id))).toEqual(["host"]);
     expect(host.events.at(-2)).toEqual(["host-xfer", { newHost: "host", from: "" }]);
   });
 
@@ -419,6 +475,7 @@ describe("server room backend", () => {
       },
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     const transport = createServerTransport({ socket: dead, myId: () => "a" });
@@ -444,6 +501,7 @@ describe("server room backend", () => {
       },
       later: timers.later,
       appVersion: "t",
+      key: () => "",
       warn: () => {},
     });
     const oldBackend = createServerRoom({
@@ -474,7 +532,7 @@ describe("server room backend", () => {
     expect(host.events.filter(([e]) => e === "left")).toEqual([
       ["left", { sender: "guest", name: "GUEST" }],
     ]);
-    expect(server.seatsOf("R")?.map((p) => p.id)).toEqual(["host"]);
+    expect(server.seatsOf("R")?.map((p) => fromWire(p.id))).toEqual(["host"]);
     expect(guest.socket.isOpen()).toBe(true);
     expect(guest.later).toHaveLength(1);
     guest.later[0]?.();

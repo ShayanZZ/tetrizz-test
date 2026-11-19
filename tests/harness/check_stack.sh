@@ -72,15 +72,15 @@ curl -fsS "$site/" | grep -qi '<title>' || fail "the page is not served"
   fail "a socket from a foreign origin must be refused with 403"
 
 step "scripts/healthcheck.sh"
-scripts/healthcheck.sh
+bash scripts/healthcheck.sh
 
 step "backup, then restore it"
-scripts/backup.sh
+bash scripts/backup.sh
 file=$(find backups/daily -type f -name 'tetrizz-*' | head -n 1)
 [[ -s $file ]] || fail "no backup file"
-scripts/restore.sh --yes "$file"
+bash scripts/restore.sh --yes "$file"
 curl -fsS "$site/readyz" | grep -q '"database":"ok"' || fail "the database is not ok after the restore"
-scripts/healthcheck.sh
+bash scripts/healthcheck.sh
 
 if [[ $variant == monitoring ]]; then
   step "Prometheus scrapes the server"

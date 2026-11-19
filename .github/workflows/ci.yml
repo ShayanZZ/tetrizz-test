@@ -51,6 +51,10 @@ jobs:
   regression:
     needs: check
     runs-on: ubuntu-latest
+    env:
+      # The real-time browser checks wait for what the pages do on their own; a runner is slower
+      # than a laptop (`tests/harness/lib.py`).
+      HARNESS_SLOWDOWN: "2"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -140,4 +144,5 @@ jobs:
         variant: [lite, postgres, monitoring]
     steps:
       - uses: actions/checkout@v7
-      - run: tests/harness/check_stack.sh ${{ matrix.variant }}
+      # Through bash: a checkout from a zip or Windows can lose the executable bit.
+      - run: bash tests/harness/check_stack.sh ${{ matrix.variant }}

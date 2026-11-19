@@ -14,6 +14,7 @@ publish between the pages. The check goes through the game's own transport and d
 import json, pathlib, sys
 from playwright.sync_api import sync_playwright
 from check_relay_handshake import FAKE_MQTT, HOOK, create_room, join_room, open_page, serve, to_lobby
+from lib import GUESTY_ID, HOSTY_ID, wait_until
 
 
 def events(page, name=None):
@@ -48,24 +49,32 @@ def main(dist):
         guest = open_page(ctx, url, "GUESTY")
         to_lobby(guest)
         join_room(guest, code or "")
-        guest.wait_for_timeout(2500)
         names = "() => document.getElementById('onlinePlayerList').innerText"
+        lists = lambda who: "() => document.getElementById('onlinePlayerList').innerText.toUpperCase().includes('%s')" % who
+        wait_until(host, lists("GUESTY"))
+        wait_until(guest, lists("HOSTY"))
         record("host lists the guest", "GUESTY" in host.evaluate(names).upper(), "room " + str(code))
-        record("guest lists the host", "HOSTY" in guest.evaluate(names).upper())
+        record("guest lists the host", "HOSTY" in guest.evaluate(names).upper(), " ".join(guest.evaluate(names).split()))
 
         guest.evaluate("() => document.getElementById('btnReady').click()")
-        host.wait_for_timeout(1500)
+        wait_until(host, "() => /GUESTY/i.test(document.getElementById('onlinePlayerList').innerText) && document.getElementById('onlinePlayerList').innerText.includes('✓ READY')")
         ready = [e for e in events(guest, "ready") if e["payload"].get("ready") is True]
         shown = " ".join(host.evaluate(names).upper().split())
         record("guest's READY is received by the host", bool(ready) and "GUESTY" in shown and "✓ READY" in shown, shown)
 
         host.evaluate("() => document.getElementById('btnStartOnlineGame').click()")
-        host.wait_for_timeout(4000)
-        playing = lambda pg: pg.evaluate("() => document.body.classList.contains('online-play')")
+        in_match = "() => document.body.classList.contains('online-play')"
+        wait_until(host, in_match)
+        wait_until(guest, in_match)
+        playing = lambda pg: pg.evaluate(in_match)
         record("host's START puts both pages into the match", playing(host) and playing(guest), "host=%s guest=%s" % (playing(host), playing(guest)))
-        host.wait_for_timeout(2500)
-        senders = {e["from"] for e in events(host, "state")} | {e["from"] for e in events(guest, "state")}
-        record("both pages publish match state", {"pid-hosty", "pid-guesty"} <= senders, str(sorted(senders)))
+        senders = set()
+        for _ in range(30):
+            senders = {e["from"] for e in events(host, "state")} | {e["from"] for e in events(guest, "state")}
+            if {HOSTY_ID, GUESTY_ID} <= senders:
+                break
+            host.wait_for_timeout(500)
+        record("both pages publish match state", {HOSTY_ID, GUESTY_ID} <= senders, str(sorted(senders)))
 
         for pg in (host, guest):
             pg.evaluate("""() => {

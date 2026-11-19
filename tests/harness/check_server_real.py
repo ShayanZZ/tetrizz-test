@@ -28,6 +28,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from playwright.sync_api import sync_playwright
 from check_relay_handshake import FAKE_MQTT, HOOK, join_room, open_page, serve, to_lobby
 from check_server_room import CODE, IN_ROOM, SUBMIT_PROMPT, confirm, in_room_of, squash, wait_for
+from lib import GUESTY_ID, HOSTY_ID
 
 PROXY_PORT = 18790
 SERVER_PORT = 18791
@@ -271,8 +272,8 @@ def main(dist, server_js):
 
         # D. kick
         host, guest, code = room_of_two()
-        host.wait_for_selector('button[data-kick="pid-guesty"]', state="attached", timeout=6000)
-        host.evaluate("() => document.querySelector('button[data-kick=\"pid-guesty\"]').click()")
+        host.wait_for_selector('button[data-kick=GUESTY_ID]', state="attached", timeout=6000)
+        host.evaluate("() => document.querySelector('button[data-kick=\"111a296b37f4ee803aed12a70ba15ac3\"]').click()")
         confirm(host)
         wait_for(guest, "() => !(document.getElementById('onlineLobby') || {}).offsetParent", 5000)
         wait_for(host, "() => !/GUESTY/i.test(document.getElementById('onlinePlayerList').innerText)", 5000)
@@ -293,7 +294,7 @@ def main(dist, server_js):
         # F. a guest's connection is cut in the lobby
         host, guest, code = room_of_two()
         guest.wait_for_timeout(3500)  # the lobby refuses a second room action within 3 s of the first
-        proxy.sever("pid-guesty")
+        proxy.sever(GUESTY_ID)
         shown = wait_for(guest, "() => { const r = document.getElementById('onlineReconnecting'); return !!r && r.offsetParent !== null; }", 3000)
         back = wait_for(guest, IN_ROOM, 12000) and wait_for(host, "() => !document.querySelector('#onlinePlayerList [title*=Reconnecting]') && /GUESTY/i.test(document.getElementById('onlinePlayerList').innerText)", 8000)
         seats = squash(host).count("GUESTY")
@@ -328,8 +329,8 @@ def main(dist, server_js):
 
         # H. a cut host: returns as host within the hold; after it, the guest is host
         host, guest, code = room_of_two()
-        proxy.blocked_ids.add("pid-hosty")  # refuse the first retry so the marker stays up long enough to see
-        proxy.sever("pid-hosty")
+        proxy.blocked_ids.add(HOSTY_ID)  # refuse the first retry so the marker stays up long enough to see
+        proxy.sever(HOSTY_ID)
         hold = wait_for(guest, held_dot, 4000)
         proxy.blocked_ids.clear()
         record("H1 the guest sees the host's seat as reconnecting, and the host role stays", hold and "HOSTY ★ HOST" in squash(guest), squash(guest))
@@ -338,8 +339,8 @@ def main(dist, server_js):
         close_all()
 
         host, guest, code = room_of_two()
-        proxy.blocked_ids.add("pid-hosty")
-        proxy.sever("pid-hosty")
+        proxy.blocked_ids.add(HOSTY_ID)
+        proxy.sever(HOSTY_ID)
         wait_for(guest, held_dot, 4000)
         took = wait_for(guest, guest_is_host, GRACE_S * 1000 + 4000)
         record("H3 when the real hold timer ends the guest becomes host", took, squash(guest))
@@ -351,8 +352,8 @@ def main(dist, server_js):
 
         # I. the server stays unreachable past the hold
         host, guest, code = room_of_two()
-        proxy.blocked_ids.add("pid-guesty")
-        proxy.sever("pid-guesty")
+        proxy.blocked_ids.add(GUESTY_ID)
+        proxy.sever(GUESTY_ID)
         failed = wait_for(guest, "() => /RECONNECT FAILED/.test((document.getElementById('rcTitle') || {}).textContent || '')", 25000)
         record("I1 past the hold plus a margin the failure panel is shown", failed)
         proxy.blocked_ids.clear()

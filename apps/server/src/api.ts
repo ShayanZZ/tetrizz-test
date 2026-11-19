@@ -5,6 +5,11 @@
  *   PUT    /api/v1/players/:id/telemetry      `{ "optOut": true | false }`
  *   DELETE /api/v1/players/:id                erases everything stored about the player
  *
+ * Every request proves the player id is the sender's own (see `identity.ts` in the protocol
+ * package): a batch carries the player key in its `key` field, the other two send it as
+ * `Authorization: Bearer <key>`. An id that the key does not derive to is answered 403, whatever
+ * is stored under it, so nobody can erase, silence or write into another player's data.
+ *
  * The routes exist only when a database is configured. A page may be served from another host than
  * the server, so answers carry CORS headers for the origins the operator allows (the same rule as
  * the WebSocket). No address is stored: addresses are map keys of the limiters and nothing else.
@@ -12,6 +17,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   isPlayerId,
+  keyMatchesId,
   PLAYERS_PATH,
   parseTelemetryBatch,
   TELEMETRY_MAX_BODY_BYTES,
@@ -29,6 +35,8 @@ export interface ApiStats {
   refusedOrigin: number;
   rateLimited: number;
   invalid: number;
+  /** Requests whose key was missing or did not belong to the player id they named. */
+  identityRefused: number;
   newPlayerLimited: number;
   dbErrors: number;
   telemetry: {
@@ -69,6 +77,7 @@ const emptyStats = (): ApiStats => ({
   refusedOrigin: 0,
   rateLimited: 0,
   invalid: 0,
+  identityRefused: 0,
   newPlayerLimited: 0,
   dbErrors: 0,
   telemetry: {
@@ -89,6 +98,7 @@ const emptyStats = (): ApiStats => ({
 
 const API_PREFIX = "/api/v1";
 const CORS_METHODS = "POST, PUT, DELETE, OPTIONS";
+const CORS_HEADERS = "Content-Type, Authorization";
 const CORS_MAX_AGE_SECONDS = "600";
 
 /** The part of a path after the API prefix, which the plugin below is registered under. */
@@ -152,7 +162,7 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
           reply
             .code(204)
             .header("Access-Control-Allow-Methods", CORS_METHODS)
-            .header("Access-Control-Allow-Headers", "Content-Type")
+            .header("Access-Control-Allow-Headers", CORS_HEADERS)
             .header("Access-Control-Max-Age", CORS_MAX_AGE_SECONDS)
             .send(),
       });
@@ -168,6 +178,26 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
         return fail(reply, code, code === 413 ? "too-large" : "invalid");
       });
       api.setNotFoundHandler((_request, reply) => fail(reply, 404, "not-found"));
+
+      /** The key a request sends in `Authorization: Bearer <key>`, or undefined. */
+      const bearerKey = (request: FastifyRequest): string | undefined => {
+        const header = request.headers.authorization;
+        return typeof header === "string" && header.startsWith("Bearer ")
+          ? header.slice(7).trim()
+          : undefined;
+      };
+
+      /** Answers 403 itself when `key` does not belong to `playerId`. */
+      const proveIdentity = (
+        reply: FastifyReply,
+        playerId: string,
+        key: string | undefined,
+      ): boolean => {
+        if (keyMatchesId(key, playerId)) return true;
+        stats.identityRefused++;
+        void fail(reply, 403, "identity");
+        return false;
+      };
 
       /** Takes one token of the address's budget; answers 429 itself when there is none. */
       const spendRequest = (request: FastifyRequest, reply: FastifyReply): boolean => {
@@ -188,7 +218,8 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
             stats.invalid++;
             return fail(reply, 400, "invalid");
           }
-          const { batch, rejected } = parsed.value;
+          const { batch, rejected, key: playerKey } = parsed.value;
+          if (!proveIdentity(reply, batch.playerId, playerKey)) return reply;
           const key = ipKey(request.ip);
           try {
             const outcome = await ingestBatch(repository, batch, rejected, {
@@ -233,6 +264,7 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
             stats.invalid++;
             return fail(reply, 400, "invalid");
           }
+          if (!proveIdentity(reply, id, bearerKey(request))) return reply;
           try {
             // The flag lives on the player's row, so the row has to exist; it holds nothing else.
             await repository.touchPlayer(id, deps.clock());
@@ -254,10 +286,11 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
             stats.invalid++;
             return fail(reply, 400, "invalid");
           }
+          if (!proveIdentity(reply, id, bearerKey(request))) return reply;
           try {
             await repository.deletePlayer(id);
             stats.playersDeleted++;
-            // The same answer whether or not anything was stored: the id is not an oracle.
+            // The same answer whether or not anything was stored.
             return { ok: true };
           } catch (error) {
             return dbFailed(reply, "delete-player", error);

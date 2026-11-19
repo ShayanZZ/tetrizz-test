@@ -17,6 +17,7 @@ kick and host-transfer paths still do what they did before they moved behind the
 import json, pathlib, sys
 from playwright.sync_api import sync_playwright
 from check_relay_handshake import FAKE_MQTT, HOOK, create_room, join_room, open_page, serve, to_lobby
+from lib import GUESTY_ID, HOSTY_ID
 
 NAMES = "() => document.getElementById('onlinePlayerList').innerText"
 
@@ -74,7 +75,7 @@ def main(dist):
         guest.evaluate("() => document.getElementById('onlineLeaveBtn').click()")
         confirm(guest)
         host.wait_for_timeout(1500)
-        record("guest leaving publishes `left`", any(e["from"] == "pid-guesty" for e in events(guest, "left")))
+        record("guest leaving publishes `left`", any(e["from"] == GUESTY_ID for e in events(guest, "left")))
         record("host's list drops the guest", "GUESTY" not in host.evaluate(NAMES).upper(), " ".join(host.evaluate(NAMES).upper().split()))
         record("host is still host and in the room", in_room(host))
         record("guest left the lobby", not in_room(guest))
@@ -86,8 +87,8 @@ def main(dist):
         confirm(host)
         guest.wait_for_timeout(2000)
         transfers = [m for m in published(host) if m.get("t") == "host-transfer"]
-        record("host leaving publishes `left`", any(e["from"] == "pid-hosty" for e in events(host, "left")))
-        record("host leaving hands the room to the guest", any(m.get("newHost") == "pid-guesty" for m in transfers), json.dumps(transfers)[:200])
+        record("host leaving publishes `left`", any(e["from"] == HOSTY_ID for e in events(host, "left")))
+        record("host leaving hands the room to the guest", any(m.get("newHost") == GUESTY_ID for m in transfers), json.dumps(transfers)[:200])
         record("the room does not close while a player can take over", not events(host, "closed"))
         try:
             guest.wait_for_function(
@@ -115,10 +116,10 @@ def main(dist):
         ctx.close()
 
         ctx, host, guest = room_of_two(browser, url)
-        host.evaluate("() => document.querySelector('button[data-kick=\"pid-guesty\"]').click()")
+        host.evaluate("() => document.querySelector('button[data-kick=\"111a296b37f4ee803aed12a70ba15ac3\"]').click()")
         confirm(host)
         guest.wait_for_timeout(2000)
-        record("kick publishes `kick` for the guest", any(e["payload"].get("target") == "pid-guesty" for e in events(host, "kick")))
+        record("kick publishes `kick` for the guest", any(e["payload"].get("target") == GUESTY_ID for e in events(host, "kick")))
         record("host's list drops the kicked guest", "GUESTY" not in host.evaluate(NAMES).upper(), " ".join(host.evaluate(NAMES).upper().split()))
         record("the kicked guest sees the alert and is out of the room", "KICKED" in guest.evaluate("() => document.body.innerText").upper() and not in_room(guest))
         record("no page errors (kick)", not (host.errors + guest.errors), "; ".join(host.errors + guest.errors)[:300])

@@ -8,39 +8,24 @@ import { saveSession } from "../game/game";
 import { versusLobbyState } from "../versus/lobby";
 import { GONE_MS, graceSweep, onlineSessionState, saveLastRoom } from "../net/online-session";
 import { netSend } from "../net/transport";
+import { startIdentity } from "../net/identity";
 import { MQ, mqRemovePlayer } from "../net/relay";
 import { forcedLeave, onlineLobbyState, renderOnlineLists } from "../net/online-lobby";
 import { handleHostDeparture, sendOnlineState } from "../net/online-sync";
 
 try {
-  onlineSessionState.myPlayerId = tabStorage.get("tetris_pid");
+  onlineSessionState.myPlayerId = startIdentity({
+    tab: tabStorage,
+    local: storage,
+    randomBytes: (count) => crypto.getRandomValues(new Uint8Array(count)),
+    warn: (scope, error) => log.warn(scope, error),
+  }).id;
 } catch (_) {
-  log.debug("boot/30-online-session", _);
-}
-
-if (!onlineSessionState.myPlayerId) {
-  try {
-    onlineSessionState.myPlayerId = storage.get("tetris_pid");
-  } catch (_) {
-    log.debug("boot/30-online-session#2", _);
-  }
-}
-
-if (!onlineSessionState.myPlayerId) {
+  // No cryptographic randomness: the page still plays on the relay and the LAN with a throwaway
+  // id; the own server refuses it, as it has no key to check.
+  log.warn("boot/30-online-session", _);
   onlineSessionState.myPlayerId =
     fxRandom().toString(36).substring(2, 10) + clock.wall().toString(36).slice(-4);
-}
-
-try {
-  storage.set("tetris_pid", onlineSessionState.myPlayerId);
-} catch (_) {
-  log.debug("boot/30-online-session#3", _);
-}
-
-try {
-  tabStorage.set("tetris_pid", onlineSessionState.myPlayerId);
-} catch (_) {
-  log.debug("boot/30-online-session#4", _);
 }
 
 setInterval(function () {

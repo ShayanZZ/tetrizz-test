@@ -1,6 +1,7 @@
 import type { TransportAdapter, TransportKind } from "@tetrizz/protocol";
 import { log } from "../core/logger";
 import { APP_VERSION } from "../core/version";
+import { playerKey } from "./identity";
 import { lanState, lanTeardownAll } from "./lan";
 import { netConfig } from "./net-config";
 import { dispatchNetMessage } from "./net-handlers";
@@ -40,6 +41,7 @@ export function serverSocket(): ServerSocket {
       return () => clearTimeout(timer);
     },
     appVersion: APP_VERSION,
+    key: playerKey,
     warn: (scope, error) => log.warn(scope, error),
   });
   return socket;

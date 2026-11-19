@@ -98,6 +98,17 @@ Close codes: 1000 normal (a bad message, a refused version, a replaced connectio
 stopping, 1003 binary frame, 1008 flooding, 1009 frame too big, 1013 try later (too many sockets, in total
 or from one address, or too many connects a minute).
 
+## Who a player is
+
+A page makes one random secret, the _player key_ (32 bytes as 64 lowercase hex characters), and keeps it in the browser (`tetris_pkey`, in the tab's storage and the browser's). Its _player id_ is derived from the key with a one-way hash: the first 32 hex characters of the SHA-256 of `tetrizz-player-id-v1:` followed by the key (`packages/protocol/src/identity.ts`, the same code on the page and the server). Ids are public: every roster lists them, `kick` and `host` use them. The key is what proves an id is yours.
+
+- **Rooms.** `hello` carries `id` and `key`. The server recomputes the id from the key and answers `refused` with reason `identity` (and closes) when they differ or the key is missing, before anything else is allowed. So nobody can replace another player's connection, take a held seat back, or be host in their place. The server stores nothing for this, so it holds across restarts, and a player cannot be locked out of an id by someone who learned it first.
+- **`/api/v1`.** The same rule for batches, opt-out and erasure (above).
+- **Where the key goes.** To this server only, inside the connection to it. Never through a room, a relay, Supabase or the LAN hub, and never into an export. On plain `ws://` and `http://` it is readable on the wire like everything else, so run the server behind HTTPS (the VPS stack's Caddy does).
+- **Losing it.** Clearing the browser's data makes a new player. The old id's rows stay until the retention removes them, and nobody can erase them early.
+- **Not covered.** Someone who takes the key out of the browser itself; and rooms on the relay, Supabase and the LAN, where no server checks ids.
+- **Old pages.** A page from before this change sends no key; its `hello` is refused with `identity` and it plays on the other backends.
+
 ## Behind a reverse proxy
 
 Proxy `/ws` to the server and keep the `Host` header. With Caddy that is a `reverse_proxy` line, which
@@ -127,7 +138,7 @@ How a batch is treated:
 - No address is stored. Addresses key the limiters in memory only: `TELEMETRY_REQUESTS_PER_MINUTE` per address and `NEW_PLAYERS_PER_HOUR_PER_IP` for ids the server has not seen (429 with `Retry-After`).
 - The page may be served from another host: answers carry CORS headers for the origins `ALLOWED_ORIGINS` lists (and the page's own host); any other origin, and a request with no `Origin` header, is a 403 unless the operator allows it (`ALLOW_MISSING_ORIGIN`, `ALLOW_FILE_ORIGIN`).
 - A database failure is a 503 with no detail; the server keeps running, `/readyz` says `"database": "down"` and still answers 200 (rooms do not need the database).
-- **A player id is both the identifier and the only key.** Anyone who knows an id can delete that player's data or switch telemetry off for it, and ids are visible to the other players in a room. See the open point in `docs/PROGRESS.md`.
+- **Every request proves the player id is the sender's own** (see "Who a player is"): a batch carries the player key in its `key` field, `PUT` and `DELETE` send `Authorization: Bearer <key>`. A key that does not belong to the id is a 403 `{"ok":false,"error":"identity"}`, counted in `tetrizz_api_refused_total{reason="identity"}`; a batch with no key at all is a 400. The key is never stored or logged.
 
 ## The janitor
 

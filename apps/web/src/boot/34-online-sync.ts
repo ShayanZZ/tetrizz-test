@@ -351,29 +351,3 @@ try {
 } catch (_) {
   log.debug("boot/34-online-sync#3", _);
 }
-
-if (onlineSyncState._lastRoom && onlineSyncState._lastRoom.pid) {
-  let _sesPid = null;
-  try {
-    _sesPid = tabStorage.get("tetris_pid");
-  } catch (_) {
-    log.debug("boot/34-online-sync#4", _);
-  }
-  if (
-    !_sesPid &&
-    onlineSyncState._lastRoom.ts &&
-    clock.wall() - onlineSyncState._lastRoom.ts <= AUTO_REJOIN_MS
-  ) {
-    onlineSessionState.myPlayerId = onlineSyncState._lastRoom.pid;
-    try {
-      storage.set("tetris_pid", onlineSessionState.myPlayerId);
-    } catch (_) {
-      log.debug("boot/34-online-sync#5", _);
-    }
-    try {
-      tabStorage.set("tetris_pid", onlineSessionState.myPlayerId);
-    } catch (_) {
-      log.debug("boot/34-online-sync#6", _);
-    }
-  }
-}

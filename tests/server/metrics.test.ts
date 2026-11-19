@@ -1,6 +1,7 @@
 /** `/metrics`, the start and failure messages, and the maintenance job, through the real server on a real port. */
 import { request as httpRequest } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
+import { playerIdFromKey, sha256Hex } from "@tetrizz/protocol";
 import { WebSocket } from "ws";
 import { createServerApp, type ServerApp } from "../../apps/server/src/app";
 import { loadConfig, type ServerConfig } from "../../apps/server/src/config";
@@ -8,7 +9,8 @@ import { mayReadMetrics } from "../../apps/server/src/metrics";
 import { openRepository, type Repository } from "../../apps/server/src/db";
 
 const NOW = Date.parse("2026-11-16T12:00:00Z");
-const A = "aaaaaaaa-1111-4222-8333-444444444444";
+const KEY_A = sha256Hex("metrics-test:a");
+const A = playerIdFromKey(KEY_A);
 const TOKEN = "scrape-token-0123456789";
 
 const apps: ServerApp[] = [];
@@ -151,6 +153,7 @@ describe("/metrics content", () => {
     const status = await post(port, "/api/v1/telemetry", {
       v: 1,
       playerId: A,
+      key: KEY_A,
       sentAt: NOW,
       games: [
         {
@@ -212,6 +215,7 @@ describe("messages to the owner", () => {
     const status = await post(port, "/api/v1/telemetry", {
       v: 1,
       playerId: A,
+      key: KEY_A,
       sentAt: NOW,
       events: [],
     });

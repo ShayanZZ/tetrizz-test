@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fromWire, helloFor, player, toWire } from "../helpers/identity";
 import {
   createReferenceServer,
   parseClientMessage,
@@ -71,6 +72,18 @@ describe("wire messages", () => {
   });
 });
 
+/** The reference server, with the seats it reports listed by the players' test names. */
+function namedServer(options?: ReferenceServerOptions): ReferenceServer {
+  const server = createReferenceServer(options);
+  return {
+    ...server,
+    seatsOf: (code) => {
+      const seats = server.seatsOf(code);
+      return seats && (JSON.parse(fromWire(JSON.stringify(seats))) as typeof seats);
+    },
+  };
+}
+
 /** A page connected to the server, remembering what it was sent. */
 interface Page {
   link: ServerLink;
@@ -106,7 +119,7 @@ function clockwork() {
 
 function serverWithGrace(extra: ReferenceServerOptions = {}) {
   const timers = clockwork();
-  const server = createReferenceServer({ later: timers.later, graceMs: 10_000, ...extra });
+  const server = namedServer({ later: timers.later, graceMs: 10_000, ...extra });
   return { server, timers };
 }
 
@@ -115,16 +128,16 @@ function connect(server: ReferenceServer, id?: string, name = "NAME"): Page {
     inbox: [],
     closed: false,
     link: undefined as unknown as ServerLink,
-    say: (message) => page.link.receive(JSON.stringify(message)),
+    say: (message) => page.link.receive(JSON.stringify(toWire(message))),
     last: (t) => page.inbox.filter((m) => m.t === t).at(-1) as never,
   };
   page.link = server.connect(
-    (text) => page.inbox.push(JSON.parse(text)),
+    (text) => page.inbox.push(JSON.parse(fromWire(text))),
     () => {
       page.closed = true;
     },
   );
-  if (id) page.say({ t: "hello", v: PROTOCOL_VERSION, app: "test", id, name });
+  if (id) page.link.receive(JSON.stringify(helloFor(id, { v: PROTOCOL_VERSION, name })));
   return page;
 }
 
@@ -149,7 +162,7 @@ function join(server: ReferenceServer, id: string, code = "ROOM", password = "")
 
 describe("reference server: connecting", () => {
   it("welcomes a current page and ends one that skips hello or sends garbage", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const ok = connect(server, "a");
     expect(ok.inbox[0]).toEqual({
       t: "welcome",
@@ -165,14 +178,14 @@ describe("reference server: connecting", () => {
   });
 
   it("refuses a newer protocol and says which one it speaks", () => {
-    const page = connect(createReferenceServer());
+    const page = connect(namedServer());
     page.say({ t: "hello", v: PROTOCOL_VERSION + 1, app: "x", id: "a", name: "A" });
     expect(page.inbox).toEqual([{ t: "refused", reason: "version", v: PROTOCOL_VERSION }]);
     expect(page.closed).toBe(true);
   });
 
   it("lets a second connection with the same id replace the first", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const first = connect(server, "same");
     connect(server, "same");
     expect(first.closed).toBe(true);
@@ -181,7 +194,7 @@ describe("reference server: connecting", () => {
 
 describe("reference server: rooms", () => {
   it("creates a room, seats the host and pushes the roster", () => {
-    const server = createReferenceServer({ now: () => 1000 });
+    const server = namedServer({ now: () => 1000 });
     const host = openRoom(server);
     expect(host.last("created")).toEqual({ t: "created", rid: 1, room: "ROOM", host: "host" });
     expect(host.last("roster")?.players).toEqual([
@@ -191,7 +204,7 @@ describe("reference server: rooms", () => {
   });
 
   it("refuses an existing code, a busy page, and a full server", () => {
-    const server = createReferenceServer({ maxRooms: 1 });
+    const server = namedServer({ maxRooms: 1 });
     openRoom(server);
     const other = connect(server, "x");
     other.say({ t: "create", rid: 4, room: "room", name: "X", settings: {}, password: "" });
@@ -201,7 +214,7 @@ describe("reference server: rooms", () => {
   });
 
   it("answers a join with the host, seed and the rules the host published", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     openRoom(server);
     const guest = join(server, "guest");
     expect(guest.last("joined")).toEqual({
@@ -217,7 +230,7 @@ describe("reference server: rooms", () => {
   });
 
   it("generates a seed when the creator sent none", () => {
-    const server = createReferenceServer({ newSeed: () => 4242 });
+    const server = namedServer({ newSeed: () => 4242 });
     const host = connect(server, "h");
     host.say({ t: "create", rid: 1, room: "R", name: "H", settings: {}, password: "" });
     const guest = join(server, "g", "R");
@@ -225,14 +238,14 @@ describe("reference server: rooms", () => {
   });
 
   it("is case-insensitive about the code and refuses an unknown one", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     openRoom(server, "AbCd");
     expect(join(server, "a", "abcd").last("joined")?.room).toBe("ABCD");
     expect(join(server, "b", "ZZZZ").last("refused")?.reason).toBe("not-found");
   });
 
   it("checks the password on the server", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     openRoom(server, "LOCK", "secret");
     expect(join(server, "a", "LOCK", "").last("refused")?.reason).toBe("password");
     expect(join(server, "b", "LOCK", "nope").last("refused")?.reason).toBe("wrong-password");
@@ -240,7 +253,7 @@ describe("reference server: rooms", () => {
   });
 
   it("seats four players and makes later arrivals spectators", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     openRoom(server);
     for (let i = 1; i < SERVER_PLAYER_LIMIT; i++) join(server, `p${i}`);
     const late = join(server, "late");
@@ -249,7 +262,7 @@ describe("reference server: rooms", () => {
   });
 
   it("relays an event to everyone except the sender", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     const b = join(server, "b");
@@ -261,7 +274,7 @@ describe("reference server: rooms", () => {
   });
 
   it("ignores events from a page that is in no room", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     connect(server, "x").say({ t: "ev", event: "attack" });
     expect(host.last("ev")).toBeUndefined();
@@ -270,7 +283,7 @@ describe("reference server: rooms", () => {
 
 describe("reference server: host, seats and leaving", () => {
   it("keeps the host's rules for later arrivals and passes them on as an event", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const early = join(server, "early");
     host.say({ t: "settings", settings: { rounds: 9, seed: 1 } });
@@ -286,7 +299,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("merges a seat's state, and does not let a spectator take a full table", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     openRoom(server);
     const a = join(server, "a");
     a.say({ t: "state", state: { ready: true } });
@@ -304,7 +317,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("hands the host to the first player when the host leaves", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     const b = join(server, "b");
@@ -315,7 +328,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("hands the host on at once when the host's connection drops and no grace is set", () => {
-    const server = createReferenceServer({ graceMs: 0 });
+    const server = namedServer({ graceMs: 0 });
     const host = openRoom(server);
     const a = join(server, "a");
     host.link.close();
@@ -324,7 +337,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("closes the room when only spectators would be left", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const spec = join(server, "x");
     spec.say({ t: "state", state: { role: "spec" } });
@@ -334,7 +347,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("deletes a room when its last player leaves", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     host.say({ t: "leave" });
     expect(server.roomCount()).toBe(0);
@@ -342,7 +355,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("lets only the host change host or kick", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     const b = join(server, "b");
@@ -355,7 +368,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("kicks a player: tells them, drops the seat, updates the roster", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     const b = join(server, "b");
@@ -369,7 +382,7 @@ describe("reference server: host, seats and leaving", () => {
   });
 
   it("moves the host on request", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     host.say({ t: "host", newHost: "a" });
@@ -380,7 +393,7 @@ describe("reference server: host, seats and leaving", () => {
 
 describe("reference server: changing the password", () => {
   it("lets the host set, change and remove the password after the room exists", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     expect(join(server, "a").last("joined")).toBeDefined();
     host.say({ t: "settings", settings: { rounds: 3 }, password: "secret" });
@@ -395,7 +408,7 @@ describe("reference server: changing the password", () => {
   });
 
   it("keeps the password when the rules change without one", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server, "ROOM", "secret");
     host.say({ t: "settings", settings: { rounds: 5 } });
     expect(join(server, "a").last("refused")?.reason).toBe("password");
@@ -405,7 +418,7 @@ describe("reference server: changing the password", () => {
   });
 
   it("ignores a password from anyone but the host, and never tells players the password", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     a.say({ t: "settings", settings: {}, password: "mine" });
@@ -420,7 +433,7 @@ describe("reference server: changing the password", () => {
   });
 
   it("does not ask a player who already has a seat, and checks everyone else against the new one", () => {
-    const server = createReferenceServer();
+    const server = namedServer();
     const host = openRoom(server);
     const a = join(server, "a");
     host.say({ t: "settings", settings: {}, password: "secret" });
@@ -430,7 +443,7 @@ describe("reference server: changing the password", () => {
 
   it("stores the password through the hooks it is given", () => {
     const stored: string[] = [];
-    const server = createReferenceServer({
+    const server = namedServer({
       passwords: {
         hash: (plain) => {
           stored.push(plain);
@@ -617,5 +630,50 @@ describe("reference server: holding the seat of a dropped player", () => {
     expect(server.seatsOf("ROOM")?.find((s) => s.id === "s")?.state.role).toBe("spec");
     timers.advance(60_000);
     expect(server.seatsOf("ROOM")).toHaveLength(5);
+  });
+});
+
+describe("reference server: proof of identity", () => {
+  it("refuses a hello with no key, a malformed key, or a key that is not the id's", () => {
+    const server = createReferenceServer();
+    const stranger = player("b").key;
+    for (const key of [undefined, "short", stranger, player("a").key.toUpperCase()]) {
+      const page = connect(server);
+      page.say({ ...helloFor("a"), key });
+      expect(page.inbox).toEqual([{ t: "refused", reason: "identity" }]);
+      expect(page.closed).toBe(true);
+    }
+  });
+
+  it("does not let a page take another player's seat or push that player out", () => {
+    const { server } = serverWithGrace();
+    const host = openRoom(server);
+    expect(host.last("created")).toBeDefined();
+
+    const thief = connect(server);
+    thief.say({ ...helloFor("thief"), id: player("host").id });
+    expect(thief.inbox).toEqual([{ t: "refused", reason: "identity" }]);
+    expect(thief.closed).toBe(true);
+
+    expect(host.closed).toBe(false);
+    expect(server.seatsOf("ROOM")?.map((seat) => seat.id)).toEqual(["host"]);
+  });
+
+  it("gives a page nothing before it has proved who it is", () => {
+    const server = createReferenceServer();
+    const page = connect(server);
+    page.say({ ...helloFor("a"), key: "nonsense" });
+    page.say({ t: "create", rid: 1, room: "ROOM", name: "A", settings: {}, password: "" });
+    expect(server.roomCount()).toBe(0);
+    expect(page.inbox).toEqual([{ t: "refused", reason: "identity" }]);
+  });
+
+  it("still lets the player's own new connection replace the old one", () => {
+    const { server } = serverWithGrace();
+    const first = connect(server, "a");
+    const second = connect(server, "a");
+    expect(first.closed).toBe(true);
+    expect(second.closed).toBe(false);
+    expect(second.last("welcome")).toBeDefined();
   });
 });

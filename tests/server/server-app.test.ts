@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket } from "ws";
 import { createServerApp, type ServerApp } from "../../apps/server/src/app";
 import { loadConfig, type ServerConfig } from "../../apps/server/src/config";
+import { fromWire, helloFor, player, toWire } from "../helpers/identity";
 
 type Msg = Record<string, unknown> & { t: string };
 
@@ -21,7 +22,7 @@ class Client {
     ws.on("message", (data: Buffer) => {
       const text = data.toString("utf8");
       this.frames.push(text);
-      this.messages.push(JSON.parse(text) as Msg);
+      this.messages.push(JSON.parse(fromWire(text)) as Msg);
       this.notify();
     });
     ws.on("close", (code: number, reason: Buffer) => {
@@ -58,7 +59,7 @@ class Client {
   }
 
   send(message: object | string): void {
-    this.ws.send(typeof message === "string" ? message : JSON.stringify(message));
+    this.ws.send(typeof message === "string" ? message : JSON.stringify(toWire(message)));
   }
 
   /** Waits until `check` returns something, rechecking on every frame, close and every 20 ms. */
@@ -88,7 +89,7 @@ class Client {
   }
 
   async hello(id: string, name = id, v = 1): Promise<Msg> {
-    this.send({ t: "hello", v, app: "test", id, name });
+    this.send(helloFor(id, { v, name }));
     return this.take("welcome");
   }
 
@@ -150,7 +151,7 @@ describe("own server: sockets", () => {
     expect((await fetch(`http://127.0.0.1:${port}/nowhere`)).status).toBe(404);
     const client = await Client.open(port);
     clients.push(client);
-    client.send({ t: "hello", v: 1, app: "test", id: "p1", name: "p1" });
+    client.send(helloFor("p1"));
     expect(await client.take("welcome")).toMatchObject({ v: 1, grace: 12 });
   });
 
@@ -428,6 +429,27 @@ describe("own server: silent and slow connections", () => {
     await new Promise((r) => setTimeout(r, 300));
     expect(alive.closed).toBeNull();
     expect(app.stats().connections).toBe(1);
+  });
+
+  it("refuses a page that cannot prove its player id, and leaves the real player's seat alone", async () => {
+    const { port } = await start();
+    const host = await connect(port, "H");
+    await host.create("proof", "H");
+
+    const thief = await Client.open(port);
+    clients.push(thief);
+    thief.send({ ...helloFor("thief"), id: player("H").id });
+    expect(await thief.take("refused")).toMatchObject({ reason: "identity" });
+    await thief.closedWith();
+
+    const keyless = await Client.open(port);
+    clients.push(keyless);
+    keyless.send({ t: "hello", v: 1, app: "test", id: player("H").id, name: "H" });
+    expect(await keyless.take("refused")).toMatchObject({ reason: "identity" });
+
+    const guest = await connect(port, "G");
+    expect(await guest.join("proof")).toMatchObject({ host: "H", isHost: false });
+    expect(host.closed).toBeNull();
   });
 
   it("cuts a connection that never says hello", async () => {

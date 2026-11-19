@@ -17,10 +17,12 @@ const NOW = Date.parse("2026-11-16T12:00:00Z");
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
 const PID = "11111111-2222-4333-8444-555555555555";
+const KEY = "0123456789abcdef".repeat(4);
 
 const valid = (extra: Record<string, unknown> = {}) => ({
   v: 1,
   playerId: PID,
+  key: KEY,
   sentAt: NOW,
   ...extra,
 });
@@ -40,6 +42,15 @@ const game = (extra: Record<string, unknown> = {}) => ({
 });
 
 describe("telemetry batch format", () => {
+  it("hands the key over separately from the batch, and refuses a batch without one", () => {
+    const parsed = parseTelemetryBatch(valid());
+    expect(parsed.ok && parsed.value.key).toBe(KEY);
+    expect(parsed.ok && JSON.stringify(parsed.value.batch)).not.toContain(KEY);
+    for (const key of [undefined, 7, "k".repeat(129)]) {
+      expect(parseTelemetryBatch(valid({ key })).ok).toBe(false);
+    }
+  });
+
   it("reads a minimal batch", () => {
     const parsed = parseTelemetryBatch(valid());
     expect(parsed.ok).toBe(true);

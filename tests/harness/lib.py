@@ -1,5 +1,5 @@
 """Shared helpers: open a TetriZZ build with a virtual clock and a seeded RNG."""
-import json, pathlib
+import hashlib, json, os, pathlib
 from datetime import datetime, timedelta, timezone
 from playwright.sync_api import sync_playwright
 
@@ -7,6 +7,24 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ADAPTER = (HERE / "legacy_adapter.js").read_text()
 T0 = datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)  # fixed start of the virtual clock
+
+
+def player_key(name):
+    """The secret key a test page is given for `name` (the page derives its player id from it)."""
+    return hashlib.sha256(("harness-player:" + name).encode()).hexdigest()
+
+
+def id_from_key(key):
+    """The player id that belongs to a key; mirrors `playerIdFromKey` in packages/protocol."""
+    return hashlib.sha256(("tetrizz-player-id-v1:" + key).encode()).hexdigest()[:32]
+
+
+def player_id(name):
+    return id_from_key(player_key(name))
+
+
+HOSTY_ID = player_id("hosty")
+GUESTY_ID = player_id("guesty")
 
 SEED_JS = """
 (() => {
@@ -76,3 +94,28 @@ class Game:
 
     def close(self):
         self.browser.close()
+
+
+# Real-time checks wait for things the pages do on their own. A slow machine (a CI runner) needs
+# longer than a fast one, so every fixed wait is multiplied by HARNESS_SLOWDOWN (default 1), and the
+# checks that matter poll for what they expect with `wait_until` instead of guessing a time.
+SLOWDOWN = float(os.environ.get("HARNESS_SLOWDOWN", "1"))
+
+
+def slow_down_waits():
+    """Makes every `page.wait_for_timeout` wait SLOWDOWN times as long."""
+    if SLOWDOWN == 1:
+        return
+    from playwright.sync_api import Page
+    original = Page.wait_for_timeout
+    Page.wait_for_timeout = lambda self, ms: original(self, ms * SLOWDOWN)
+
+
+def wait_until(page, expression, timeout_ms=20000):
+    """True as soon as the JavaScript `expression` (a function) is truthy in `page`, False after the timeout."""
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    try:
+        page.wait_for_function(expression, timeout=timeout_ms * SLOWDOWN)
+        return True
+    except PlaywrightTimeout:
+        return False

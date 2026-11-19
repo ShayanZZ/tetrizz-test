@@ -147,6 +147,7 @@ export function createMetrics(sources: MetricSources, info: MetricsInfo): Metric
       set(a.refusedOrigin, { reason: "origin" });
       set(a.rateLimited, { reason: "rate" });
       set(a.invalid, { reason: "invalid" });
+      set(a.identityRefused, { reason: "identity" });
       set(a.newPlayerLimited, { reason: "new_players" });
     },
     ["reason"],

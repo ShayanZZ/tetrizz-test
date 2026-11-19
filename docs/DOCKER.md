@@ -79,16 +79,16 @@ data folder is `data/postgres/<major>/docker`, so the old one stays beside the n
 ## Backups
 
 ```sh
-scripts/backup.sh                       # one copy now
-scripts/restore.sh backups/daily/tetrizz-sqlite-20261117-031700.db.gz
-scripts/healthcheck.sh                  # one line per check, exit code 0 when all is well
+bash scripts/backup.sh                  # one copy now
+bash scripts/restore.sh backups/daily/tetrizz-sqlite-20261117-031700.db.gz
+bash scripts/healthcheck.sh             # one line per check, exit code 0 when all is well
 ```
 
 Nightly, from cron (`crontab -e`):
 
 ```cron
-17 3 * * * cd /opt/tetrizz && scripts/backup.sh >> backups/backup.log 2>&1
-*/5 * * * * cd /opt/tetrizz && scripts/healthcheck.sh >/dev/null && curl -fsS -m 10 https://hc-ping.com/<your-uuid>
+17 3 * * * cd /opt/tetrizz && bash scripts/backup.sh >> backups/backup.log 2>&1
+*/5 * * * * cd /opt/tetrizz && bash scripts/healthcheck.sh >/dev/null && curl -fsS -m 10 https://hc-ping.com/<your-uuid>
 ```
 
 - SQLite: a snapshot taken while the server runs, checked (integrity, tables) and compressed. PostgreSQL: `pg_dump` in
