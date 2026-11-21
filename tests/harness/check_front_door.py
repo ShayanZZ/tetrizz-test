@@ -69,7 +69,7 @@ try:
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         ctx = browser.new_context(viewport={"width": 1280, "height": 720})
-        ctx.add_init_script(HOOK)
+        ctx.add_init_script(HOOK + "try{localStorage.setItem('tetris_telemetry','off')}catch(e){}")
         sockets: list[str] = []
         ctx.on("page", lambda pg: pg.on("websocket", lambda ws: sockets.append(ws.url)))
         page = open_page(ctx, f"{base}/", "HOSTY")

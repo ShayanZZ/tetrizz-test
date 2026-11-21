@@ -120,7 +120,7 @@ origin gets 403, and `/metrics` is not routed), and `docs/DOCKER.md` runs it all
 ## `/api/v1` (only with a database)
 
 With `DB_DRIVER=sqlite` or `postgres` the server also answers these; without a database they are 404.
-The wire format is in `packages/protocol/src/telemetry.ts` (the page will use the same parser).
+The wire format is in `packages/protocol/src/telemetry.ts` (the page uses the same parser). What the page sends, and what it never sends, is written for operators in `PRIVACY.md`; keep that file and any privacy statement you publish in step with the server you run.
 
 | Request                                                 | What it does                                                                                                                                                                                                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -133,6 +133,7 @@ How a batch is treated:
 - Every item has an id the page made up; a second copy changes nothing, so a page may retry freely.
 - Times are moved by the difference between the server's clock on arrival and the page's `sentAt`, never into the future. An event older than its retention is dropped (`stale`); one that arrives more than five minutes after it happened, or that the page marked, is stored as recorded offline.
 - Only the sender's own row of a game is stored; rows for other players are rejected, so nobody can write results under another id.
+- One match is one game. Every human player's page reports the match under the same game id with only its own row. The first report creates the game; a later report for the same id adds its own row (the answer says `joined`) and leaves the game's other fields (duration, bots, device, app version) as the first report had them. A repeat of a row already stored is a duplicate. A report is refused (counted in `rejected`, nothing written) when its mode differs from the game's, its start time is more than two minutes from the game's, or the game already has 16 rows.
 - A single item that does not fit the format is left out and counted in `rejected`; a request that is not shaped right is a 400.
 - The device is what the `User-Agent` header says (parsed with `bowser`: class, OS and version, browser and major version, engine), overridden by whatever the page sends (Chromium's client hints give the real Android and Windows versions).
 - No address is stored. Addresses key the limiters in memory only: `TELEMETRY_REQUESTS_PER_MINUTE` per address and `NEW_PLAYERS_PER_HOUR_PER_IP` for ids the server has not seen (429 with `Retry-After`).
@@ -176,7 +177,7 @@ Counters the server already keeps are read at scrape time. Names start with `tet
 `rooms`, `connections_accepted_total`, `connections_refused_total{reason}`, `connections_closed_total{reason}`,
 `messages_received_total`, `messages_dropped_total`, `password_limited_total`, `ping_seconds` (histogram of the
 heartbeat round trip), `api_requests_total`, `api_refused_total{reason}`, `telemetry_batches_total`,
-`telemetry_items_total{kind,outcome}`, `db_errors_total`, `db_up`, `janitor_runs_total{job,result}`,
+`telemetry_items_total{kind,outcome}` (games also have `joined`), `db_errors_total`, `db_up`, `janitor_runs_total{job,result}`,
 `janitor_job_seconds`, `janitor_last_ok_timestamp_seconds{job}`, `purged_rows_total{table}`,
 `retention_cut_level`, `db_size_bytes`, `db_budget_bytes`, `db_rows{table}`, today's `games_today{mode}`
 (the twelve most played modes, the rest as `other`), `players_active_today`, `players_new_today`,
@@ -209,7 +210,7 @@ down at the digest hour skips that day. Text is plain, with the `SERVER_NAME` fi
 ## Tests
 
 - `tests/unit/server-*.test.ts`: settings, origin policy, scrypt, limiters, the telemetry format, clock correction and device parsing (pure code).
-- `tests/server/api.test.ts`: `/api/v1` on a real port with an in-memory SQLite database: storing, duplicates, clock skew, offline and stale events, opt-out, deletion, origin and CORS, both limiters, database failure, no database.
+- `tests/server/api.test.ts`: `/api/v1` on a real port with an in-memory SQLite database: storing, duplicates, one match reported by several players (rows joined, refused, limited, opted out, two real page clients), clock skew, offline and stale events, opt-out, deletion, origin and CORS, both limiters, database failure, no database.
 - `tests/server/notifier.test.ts`, `janitor.test.ts`, `alerts.test.ts`, `metrics.test.ts`: delivery, cooldowns and retries with a recording `fetch`; rollups, purge, size budget and failures against an in-memory SQLite database and a moving clock; the alert rules; `/metrics` access, content and scrape behaviour, and the start and failure messages through the real server.
 - `tests/server/server-app.test.ts`: the server on a real port with real `ws` clients: rooms and relay,
   passwords, seat hold with real timers, origin, limits, heartbeats, slow reader, shutdown. The room rules

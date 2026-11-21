@@ -125,7 +125,7 @@ def main(dist):
 
         def context(extra=""):
             ctx = browser.new_context(viewport={"width": 1280, "height": 720})
-            ctx.add_init_script(HOOK + FAKE_MQTT + FAKE_SUPABASE + extra + "try{localStorage.setItem('tetris_ipop','9999999999999')}catch(e){}")
+            ctx.add_init_script(HOOK + FAKE_MQTT + FAKE_SUPABASE + extra + "try{localStorage.setItem('tetris_ipop','9999999999999');localStorage.setItem('tetris_telemetry','off')}catch(e){}")
             return ctx
 
         def settle(page, ms=1200):

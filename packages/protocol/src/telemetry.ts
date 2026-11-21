@@ -73,7 +73,7 @@ export interface TelemetryEvent {
 }
 
 export interface TelemetryGamePlayer {
-  /** Only the sender's own row is stored; rows for other players are rejected. */
+  /** Only the sender's own row is stored; rows for other players are rejected. Every human player of a match reports their own row under the match's one game id. */
   playerId: string;
   seat?: number;
   result: TelemetryResult;
@@ -139,6 +139,8 @@ export interface TelemetryAck {
   stored: { events: number; games: number; history: number };
   /** Items the server already had; the page can forget them. */
   duplicates: { events: number; games: number; history: number };
+  /** Games that already existed (another player of the same match reported first) and that got this player's row. Left out when none. */
+  joined?: number;
   rejected: number;
   /** Events too old to keep (older than the retention period); the page can forget them. */
   stale: number;

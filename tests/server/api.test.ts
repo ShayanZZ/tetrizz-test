@@ -5,6 +5,8 @@
 import { request as httpRequest } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
 import { playerIdFromKey, sha256Hex } from "@tetrizz/protocol";
+import { createTelemetryClient } from "../../apps/web/src/telemetry/client";
+import { createMemoryStore } from "../../apps/web/src/telemetry/queue";
 import { createServerApp, type ServerApp } from "../../apps/server/src/app";
 import { loadConfig, type ServerConfig } from "../../apps/server/src/config";
 import { openRepository, type Repository } from "../../apps/server/src/db";
@@ -581,5 +583,166 @@ describe("the API: whose data a request may touch", () => {
       await repo.getSession("sess-0001"),
     ]);
     expect(stored).not.toContain(KEYS.get(A));
+  });
+});
+
+describe("one match reported by several players", () => {
+  const C = person("c");
+  const row = (playerId: string, score: number) => ({
+    playerId,
+    seat: 0,
+    result: "win",
+    lines: 10,
+    score,
+    pieces: 40,
+  });
+  const match = (playerId: string, extra: Record<string, unknown> = {}) =>
+    batch({
+      playerId,
+      games: [
+        game({
+          id: "match-00000001",
+          mode: "versus",
+          players: [row(playerId, 100)],
+          ...extra,
+        }),
+      ],
+    });
+  const post = (port: number, body: unknown) => call(port, "POST", "/api/v1/telemetry", { body });
+
+  it("keeps one game with a row for each player who reports it", async () => {
+    const { port, repo, app } = await start();
+    expect((await post(port, match(A))).json).toMatchObject({
+      stored: { games: 1 },
+      duplicates: { games: 0 },
+    });
+    const second = await post(port, match(B, { durationMs: 44_000 }));
+    expect(second.json).toMatchObject({
+      stored: { games: 0 },
+      duplicates: { games: 0 },
+      joined: 1,
+      rejected: 0,
+    });
+    expect((await post(port, match(A))).json).toMatchObject({ duplicates: { games: 1 } });
+    expect((await post(port, match(B))).json).toMatchObject({ duplicates: { games: 1 } });
+    const stored = await repo.getGame("match-00000001");
+    expect(stored?.players.map((p) => p.playerId).sort()).toEqual([A, B].sort());
+    expect(stored?.durationMs).toBe(45_000);
+    expect(await repo.counts()).toMatchObject({ games: 1, players: 2 });
+    expect(app.apiStats()?.telemetry).toMatchObject({ gamesStored: 1, gamesJoined: 1 });
+  });
+
+  it("does not add a row to a game of another mode or another time, and says so", async () => {
+    const { port, repo } = await start();
+    await post(port, match(A));
+    const otherMode = await post(port, match(B, { mode: "sprint" }));
+    expect(otherMode.json).toMatchObject({ rejected: 1 });
+    expect(otherMode.json.joined).toBeUndefined();
+    const longAfter = await post(port, match(C, { startedAt: NOW - 60_000 - 10 * 60_000 }));
+    expect(longAfter.json).toMatchObject({ rejected: 1 });
+    expect((await repo.getGame("match-00000001"))?.players.map((p) => p.playerId)).toEqual([A]);
+  });
+
+  it("still writes a row only under the sender's own id", async () => {
+    const { port, repo } = await start();
+    await post(port, match(A));
+    const sneaky = await post(
+      port,
+      batch({
+        playerId: B,
+        games: [
+          game({ id: "match-00000001", mode: "versus", players: [row(C, 999_999), row(B, 5)] }),
+        ],
+      }),
+    );
+    expect(sneaky.json).toMatchObject({ joined: 1, rejected: 1 });
+    const ids = (await repo.getGame("match-00000001"))?.players.map((p) => p.playerId).sort();
+    expect(ids).toEqual([A, B].sort());
+    expect(await repo.getPlayer(C)).toBeNull();
+  });
+
+  it("adds nothing for a player who switched telemetry off", async () => {
+    const { port, repo } = await start();
+    await post(port, match(A));
+    const off = await call(port, "PUT", `/api/v1/players/${B}/telemetry`, {
+      body: { optOut: true },
+    });
+    expect(off.status).toBe(200);
+    expect((await post(port, match(B))).json).toMatchObject({ optedOut: true });
+    expect((await repo.getGame("match-00000001"))?.players.map((p) => p.playerId)).toEqual([A]);
+  });
+
+  it("works with the page's own client: two pages report one match and one of them erases itself", async () => {
+    const { port, repo } = await start();
+    const page = (playerId: string, tag: string) => {
+      const key = KEYS.get(playerId) as string;
+      let n = 0;
+      return createTelemetryClient({
+        identity: { id: playerId, key },
+        base: () => `http://127.0.0.1:${port}`,
+        store: createMemoryStore(),
+        kv: (() => {
+          const map = new Map<string, string>();
+          return {
+            get: (k: string) => map.get(k) ?? null,
+            set: (k: string, v: string) => void map.set(k, v),
+            remove: (k: string) => void map.delete(k),
+          };
+        })(),
+        async http(req) {
+          const auth = req.headers.Authorization ?? req.headers.authorization;
+          const res = await call(port, req.method, new URL(req.url).pathname, {
+            ...(req.body !== undefined ? { raw: req.body } : {}),
+            type: req.headers["Content-Type"] ?? req.headers["content-type"] ?? "text/plain",
+            key: auth ? auth.replace(/^Bearer /, "") : null,
+          });
+          return { status: res.status, body: res.json };
+        },
+        now: () => NOW,
+        random: () => 0.5,
+        newId: () => `${tag}-${String(++n).padStart(8, "0")}`,
+        later: () => () => {},
+        online: () => true,
+        warn: () => {},
+        appVersion: "1.3.0",
+        device: () => Promise.resolve({ deviceClass: "desktop", displayMode: "browser" }),
+      });
+    };
+    const a = page(A, "pa");
+    const b = page(B, "pb");
+    await a.start();
+    await b.start();
+    for (const [client, id] of [
+      [a, A],
+      [b, B],
+    ] as const) {
+      client.record("game_start", { mode: "versus" });
+      client.recordGame({
+        id: "match-00000009",
+        mode: "versus",
+        startedAt: NOW - 50_000,
+        durationMs: 40_000,
+        players: [row(id, id === A ? 300 : 200)],
+      });
+      client.recordHistory("personal_best", 300);
+      await client.flush();
+      expect(client.status()).toMatchObject({ queued: 0, serverHasNone: false, refused: false });
+    }
+    expect(await repo.counts()).toMatchObject({ games: 1, players: 2 });
+    expect(
+      (await repo.getGame("match-00000009"))?.players.map((p) => [p.playerId, p.score]).sort(),
+    ).toEqual(
+      [
+        [A, 300],
+        [B, 200],
+      ].sort(),
+    );
+    expect((await repo.listEvents(B, 10)).map((e) => e.kind).sort()).toEqual([
+      "app_start",
+      "game_start",
+    ]);
+    expect(await b.eraseMyData()).toBe(true);
+    expect((await repo.getGame("match-00000009"))?.players.map((p) => p.playerId)).toEqual([A]);
+    expect(await repo.getPlayer(B)).toBeNull();
   });
 });

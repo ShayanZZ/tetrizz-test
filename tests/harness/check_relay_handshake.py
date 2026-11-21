@@ -110,7 +110,7 @@ def main(dist):
 
         def fresh():
             ctx = browser.new_context(viewport={"width": 1280, "height": 720})
-            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999')}catch(e){}")
+            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999');localStorage.setItem('tetris_telemetry','off')}catch(e){}")
             return ctx
 
         # 1 and 2: legacy guest and current guest

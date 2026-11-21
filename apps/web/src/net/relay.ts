@@ -177,6 +177,11 @@ export function onNetStart(p) {
     renderOnlineLists();
     return;
   }
+  const _nsSt = p.settings ? p.settings.st : null;
+  onlineSessionState.onlineMatchStamp =
+    _nsSt && typeof _nsSt.ts === "number" && Array.isArray(p.order)
+      ? { ts: _nsSt.ts, order: p.order.slice() }
+      : null;
   startOnlineMatch(p.order || []);
 }
 

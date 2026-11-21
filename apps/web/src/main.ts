@@ -54,6 +54,7 @@ import "./boot/33-online-lobby";
 import "./boot/34-online-sync";
 import "./boot/35-replay";
 import "./boot/36-install";
+import "./boot/37-telemetry";
 import { showAppVersion } from "./core/version";
 import { installHarnessHook } from "./testing/harness-hook";
 import { initPerfOverlay } from "./ui/perf-overlay";

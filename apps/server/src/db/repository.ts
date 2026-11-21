@@ -15,7 +15,9 @@ import type {
   EventInput,
   EventRecord,
   GameInput,
+  GameJoinRules,
   GameResult,
+  GameWrite,
   HistoryInput,
   HistoryRecord,
   PlayerDay,
@@ -36,6 +38,8 @@ export interface RepositoryOptions {
 }
 
 const DEFAULT_BATCH = 1000;
+/** Used when a caller gives no rules: a report may join a game of the same mode that began within two minutes. */
+const DEFAULT_JOIN: GameJoinRules = { windowMs: 120_000, maxPlayers: 16 };
 const UNKNOWN = "unknown";
 
 const num = (value: unknown): number => Number(value);
@@ -52,6 +56,17 @@ function fingerprintOf(device: DeviceInfo): string {
     .filter(([, value]) => value !== undefined && value !== null)
     .sort(([a], [b]) => (a < b ? -1 : 1));
   return createHash("sha256").update(JSON.stringify(entries)).digest("hex").slice(0, 16);
+}
+
+/** Whether a report for an id that is already stored describes that same game. */
+async function belongsToGame(tx: Executor, game: GameInput, join: GameJoinRules): Promise<boolean> {
+  const rows = await tx.all("SELECT mode, started_at FROM games WHERE id = ?", [game.id]);
+  const stored = rows[0];
+  if (!stored) return false;
+  return (
+    String(stored.mode) === game.mode &&
+    Math.abs(num(stored.started_at) - game.startedAt) <= join.windowMs
+  );
 }
 
 const toPlayer = (row: Row): PlayerRecord => ({
@@ -216,9 +231,9 @@ export function createRepository(options: RepositoryOptions): Repository {
       return row ? toSession(row) : null;
     },
 
-    async recordGame(game: GameInput) {
-      return db.transaction(async (tx) => {
-        const added = await tx.run(
+    async recordGame(game: GameInput, join: GameJoinRules = DEFAULT_JOIN): Promise<GameWrite> {
+      return db.transaction(async (tx): Promise<GameWrite> => {
+        const created = await tx.run(
           `INSERT INTO games (id, session_id, mode, started_at, duration_ms, bots, bot_level, app_version, device_class, offline)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`,
           [
@@ -234,10 +249,29 @@ export function createRepository(options: RepositoryOptions): Repository {
             flag(game.offline),
           ],
         );
-        if (added === 0) return false;
+        if (created === 0 && !(await belongsToGame(tx, game, join))) return "refused";
+
+        let room = join.maxPlayers;
+        if (created === 0) {
+          const held = await tx.all(
+            "SELECT COUNT(*) AS value FROM game_players WHERE game_id = ?",
+            [game.id],
+          );
+          room = join.maxPlayers - num(held[0]?.value);
+        }
+        let added = 0;
+        let turnedAway = 0;
         for (const player of game.players) {
+          if (created === 0 && room - added <= 0) {
+            const known = await tx.all(
+              "SELECT 1 AS value FROM game_players WHERE game_id = ? AND player_id = ?",
+              [game.id, player.playerId],
+            );
+            if (known.length === 0) turnedAway++;
+            continue;
+          }
           await upsertPlayer(tx, player.playerId, game.startedAt, game.startedAt);
-          await tx.run(
+          added += await tx.run(
             `INSERT INTO game_players (game_id, player_id, seat, result, lines, score, pieces, pps, apm)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (game_id, player_id) DO NOTHING`,
             [
@@ -253,7 +287,9 @@ export function createRepository(options: RepositoryOptions): Repository {
             ],
           );
         }
-        return true;
+        if (created > 0) return "created";
+        if (added > 0) return "joined";
+        return turnedAway > 0 ? "refused" : "duplicate";
       });
     },
     async getGame(id) {

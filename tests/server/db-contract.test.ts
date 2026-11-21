@@ -255,8 +255,8 @@ describe.each(makers)("repository on %s", (_name, make) => {
         { playerId: "b", seat: 1, result: "loss", lines: 1, score: 10, pieces: 8 },
       ],
     });
-    expect(await repo.recordGame(versus)).toBe(true);
-    expect(await repo.recordGame(versus)).toBe(false);
+    expect(await repo.recordGame(versus)).toBe("created");
+    expect(await repo.recordGame(versus)).toBe("duplicate");
     const stored = await repo.getGame("g1");
     expect(stored).toMatchObject({
       mode: "versus",
@@ -301,7 +301,93 @@ describe.each(makers)("repository on %s", (_name, make) => {
     });
     await expect(repo.recordGame(bad)).rejects.toThrow();
     expect(await repo.counts()).toEqual({ players: 0, sessions: 0, games: 0, events: 0 });
-    expect(await repo.recordGame(game("g1", 1000))).toBe(true);
+    expect(await repo.recordGame(game("g1", 1000))).toBe("created");
+  });
+
+  describe("one game reported by several players", () => {
+    const row = (playerId: string, score: number) => ({
+      playerId,
+      result: "win" as const,
+      lines: 10,
+      score,
+      pieces: 50,
+    });
+    const report = (playerId: string, extra: Partial<GameInput> = {}) =>
+      game("match-1", 100_000, { mode: "versus", players: [row(playerId, 7)], ...extra });
+
+    it("adds a later player's row to the game and keeps what the first report said", async () => {
+      await start();
+      expect(
+        await repo.recordGame(report("a", { durationMs: 60_000, deviceClass: "mobile" })),
+      ).toBe("created");
+      expect(
+        await repo.recordGame(report("b", { durationMs: 59_000, deviceClass: "desktop", bots: 3 })),
+      ).toBe("joined");
+      const stored = await repo.getGame("match-1");
+      expect(stored).toMatchObject({ durationMs: 60_000, deviceClass: "mobile", bots: 0 });
+      expect(stored?.players.map((p) => p.playerId)).toEqual(["a", "b"]);
+      expect(await repo.counts()).toMatchObject({ players: 2, games: 1 });
+      expect(await repo.recordGame(report("b"))).toBe("duplicate");
+      expect(await repo.recordGame(report("a"))).toBe("duplicate");
+      expect((await repo.getGame("match-1"))?.players).toHaveLength(2);
+    });
+
+    it("keeps the first row of a player when the same player reports again with other numbers", async () => {
+      await start();
+      await repo.recordGame(report("a"));
+      await repo.recordGame(report("a", { players: [row("a", 999)] }));
+      expect((await repo.getGame("match-1"))?.players[0]?.score).toBe(7);
+    });
+
+    it("refuses a report that does not belong to the game and writes nothing", async () => {
+      await start();
+      await repo.recordGame(report("a"));
+      const before = await repo.counts();
+      expect(await repo.recordGame(report("b", { mode: "sprint" }))).toBe("refused");
+      expect(await repo.recordGame(report("c", { startedAt: 100_000 + 3 * 60_000 }))).toBe(
+        "refused",
+      );
+      expect(await repo.recordGame(report("d", { startedAt: 100_000 - 3 * 60_000 }))).toBe(
+        "refused",
+      );
+      expect(await repo.counts()).toEqual(before);
+      expect((await repo.getGame("match-1"))?.players).toHaveLength(1);
+      expect(await repo.recordGame(report("e", { startedAt: 100_000 + 90_000 }))).toBe("joined");
+    });
+
+    it("follows the window and the row limit it is given", async () => {
+      await start();
+      const rules = { windowMs: 1000, maxPlayers: 2 };
+      expect(await repo.recordGame(report("a"), rules)).toBe("created");
+      expect(await repo.recordGame(report("b", { startedAt: 100_900 }), rules)).toBe("joined");
+      expect(await repo.recordGame(report("c", { startedAt: 100_500 }), rules)).toBe("refused");
+      expect(await repo.recordGame(report("b", { startedAt: 100_900 }), rules)).toBe("duplicate");
+      expect(await repo.recordGame(report("d", { startedAt: 105_000 }), rules)).toBe("refused");
+      expect((await repo.getGame("match-1"))?.players.map((p) => p.playerId)).toEqual(["a", "b"]);
+      expect((await repo.counts()).players).toBe(2);
+    });
+
+    it("rolls a joined row into the day's numbers when the day is rolled up again", async () => {
+      await start();
+      await repo.recordGame(report("a", { startedAt: D + HOUR }));
+      await repo.rollupDay(DAY);
+      await repo.recordGame(report("b", { startedAt: D + HOUR + 5000 }));
+      await repo.rollupDay(DAY);
+      const stats = await repo.dailyStats(DAY, DAY);
+      expect(stats.find((x) => x.metric === "games" && x.dim === "all")?.value).toBe(1);
+      expect(stats.find((x) => x.metric === "players_active" && x.dim === "all")?.value).toBe(2);
+      expect((await repo.playerDays("b", DAY, DAY))[0]).toMatchObject({ games: 1 });
+    });
+
+    it("deleting one player keeps the game for the others, and the last one takes it away", async () => {
+      await start();
+      await repo.recordGame(report("a"));
+      await repo.recordGame(report("b"));
+      expect(await repo.deletePlayer("b")).toMatchObject({ player: true, games: 0 });
+      expect((await repo.getGame("match-1"))?.players.map((p) => p.playerId)).toEqual(["a"]);
+      expect(await repo.deletePlayer("a")).toMatchObject({ player: true, games: 1 });
+      expect(await repo.getGame("match-1")).toBeNull();
+    });
   });
 
   it("stores events once, keeps the payload and the offline flag, and counts only new ones", async () => {

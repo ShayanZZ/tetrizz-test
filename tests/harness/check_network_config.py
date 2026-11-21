@@ -32,6 +32,7 @@ def load(pw, root, srv, config, reload_with=None):
         cfg.write_text(json.dumps(config))
     browser = pw.chromium.launch()
     ctx = browser.new_context()
+    ctx.add_init_script("try{localStorage.setItem('tetris_telemetry','off')}catch(e){}")
     page = ctx.new_page()
     cdn, errors, cfg_status = [], [], []
     page.on("pageerror", lambda e: errors.append(str(e)))

@@ -196,7 +196,7 @@ def main(dist, server_js):
         def fresh():
             ctx = browser.new_context(viewport={"width": 1280, "height": 720})
             ctxs.append(ctx)
-            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999')}catch(e){}")
+            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999');localStorage.setItem('tetris_telemetry','off')}catch(e){}")
             return ctx
 
         def close_all():

@@ -46,6 +46,7 @@ export interface ApiStats {
     eventsDuplicate: number;
     gamesStored: number;
     gamesDuplicate: number;
+    gamesJoined: number;
     historyStored: number;
     historyDuplicate: number;
     itemsRejected: number;
@@ -87,6 +88,7 @@ const emptyStats = (): ApiStats => ({
     eventsDuplicate: 0,
     gamesStored: 0,
     gamesDuplicate: 0,
+    gamesJoined: 0,
     historyStored: 0,
     historyDuplicate: 0,
     itemsRejected: 0,
@@ -242,6 +244,7 @@ export function registerApi(fastify: FastifyInstance, deps: ApiDeps): Api {
             t.eventsDuplicate += ack.duplicates.events;
             t.gamesStored += ack.stored.games;
             t.gamesDuplicate += ack.duplicates.games;
+            t.gamesJoined += ack.joined ?? 0;
             t.historyStored += ack.stored.history;
             t.historyDuplicate += ack.duplicates.history;
             t.itemsRejected += ack.rejected;

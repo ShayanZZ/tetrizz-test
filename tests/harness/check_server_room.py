@@ -253,7 +253,7 @@ def main(dist):
             # a saved room tries to rejoin it.
             ctx = browser.new_context(viewport={"width": 1280, "height": 720})
             ctxs.append(ctx)
-            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999')}catch(e){}")
+            ctx.add_init_script(HOOK + FAKE_MQTT + "try{localStorage.setItem('tetris_ipop','9999999999999');localStorage.setItem('tetris_telemetry','off')}catch(e){}")
             if fake:
                 ctx.route_web_socket("**/ws", fake.handle)
             return ctx

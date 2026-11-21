@@ -4,6 +4,7 @@ import { log } from "./logger";
 export interface EventMap {
   tick: number;
   refreshVs: undefined;
+  roomEntered: { how: "create" | "join"; backend: "server" | "relay" | "supabase" };
   vsStartMatch: undefined;
   vsBeginRound: undefined;
   vsRoundEnd: number;
@@ -29,6 +30,9 @@ export interface BeforeEventMap {
   vsStartMatch: [];
   vsBeginRound: [];
   vsRoundEnd: [winnerSlot: number];
+  quitToMenu: [];
+  /** The player leaves (or is removed from) an online room; the room's state is still whole. */
+  leaveOnlineRoom: [];
 }
 
 /** Handlers can veto an action by returning true. */

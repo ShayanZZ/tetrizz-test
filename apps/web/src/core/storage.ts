@@ -36,6 +36,8 @@ export const STORAGE_KEYS = [
   "tetris_session",
   "tetris_swipe",
   "tetris_swipesens",
+  "tetris_telemetry",
+  "tetris_telemetry_todo",
   "tetris_theme",
   "tetris_touch_order",
   "tetris_touch_presets",

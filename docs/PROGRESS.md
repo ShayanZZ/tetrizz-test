@@ -21,9 +21,214 @@
 - **Phase 8c-4a (a bug in the VPS front door, and the static-host guides): done.** Found while writing the guides: Caddy's `/config.json` said `"url":"/ws"`, the page adds `/ws` itself, so on the VPS stack it opened `/ws/ws` (not forwarded) and fell back to the public relay without any sign. Fixed (`"/"`), with a unit test and a real-Caddy browser check. `docs/DEPLOYMENT.md` now covers GitHub Pages, Vercel, Cloudflare Pages, the VPS stack and a static page with a server on a VPS; new `.github/workflows/pages.yml`, `vercel.json`, `deploy/cloudflare/_headers`. Details below.
 - **Phase 8c-4b (the player-id fix, the description text): done.** Ids are derived from a secret key that the server checks (rooms and `/api/v1`); see "Player identity". Also the description text replacement.
 - **Phase 8c-4c (the first CI run read and fixed, Alertmanager): done, CI still to prove it.** The CI run of the 8c-4b zip (test repo `ShayanZZ/tetrizz-test`, 19 Nov 2026) showed four faults: the harness' solo traces (the old random player id drew one `Math.random` number at start), the stack check's `curl | grep -q` under `pipefail` (lite and postgres), and Loki's image having no shell or wget (monitoring). All fixed and, where possible, reproduced here first. Alertmanager is in the monitoring stack, with Telegram, Discord and an outside heartbeat. See "Phase 8c-4c".
-- **Phase 8c-4d (the second CI run of the stack read, one test fault fixed): done, CI still to prove it.** The run of the 8c-4c zip (test repo `ShayanZZ/tetrizz-test`, 19 Nov 2026): `check` (545 tests), `deploy-files`, `deploy-stack` lite and postgres (build, front door, healthcheck, backup and restore) all passed, and the regression's behaviour steps passed. `deploy-stack` monitoring got through Loki, Grafana datasources and dashboards, Alloy shipping logs and Prometheus scrapes, and failed only at the Watchdog heartbeat: Alertmanager's own log says the delivery succeeded, the check's sink (a busybox `nc -l` loop) had cut the request off after the headers. The sink is now a small Node server run from the server image. See "Phase 8c-4d".
-- **Next:** push `TetriZZ_phase8c4d.zip` to the test repo and read the monitoring job once more (only the heartbeat step and what follows it, the final lines of the stack check, are unproven). In the test repo set Settings, Pages, Source to GitHub Actions (see 8c-4d). Then the page's side of telemetry: IndexedDB queue, opt-out switch, device data, sending the key (see "Player identity") and the rule for who reports a game (see 8c-2a). After that, whatever `docs/PLAN.md` lists next (the room list endpoint, Grafana business dashboards on PostgreSQL, accounts later).
+- **Phase 8c-4d (the second CI run of the stack read, one test fault fixed): done, and proved by CI.** The run of the 8c-4d zip (test repo `ShayanZZ/tetrizz-test`, 19 Nov 2026) was green in every job: `check` (545 tests), `deploy-files`, `deploy-stack` lite, postgres and monitoring (now through the Watchdog heartbeat to "all good"), and `regression` (its informational screenshot step still reports the known font gap). `pages.yml` built and deployed. See "Phase 8c-4d" and "Phase 8d-1".
+- **Phase 8d-1 (the page's telemetry client, not wired into the page yet): done.** `apps/web/src/telemetry/`: a capped queue (IndexedDB, memory fallback), coarse device facts, and a client that batches, retries with backoff, tells the server the player's choices (off, erase) and keeps them until they arrive. 19 new tests, every deliberate break caught; the page does not import it yet, so nothing the player sees has changed. Also the `?` in the stack check's heartbeat line is fixed. See "Phase 8d-1".
+- **Phase 8d-2a (one game per match on the server, the page's real dependencies): done; the page is still not wired.** A match of several humans is one game with one row per player: the server adds a later page's own row to the game that exists (same mode, start within 2 minutes, at most 16 rows), the client takes a shared game id, and `telemetry/address.ts`, `page.ts` and `index.ts` hold the address rules, the match id and the real `fetch`, `sendBeacon`, storage, crypto and listener setup. 607 tests, nine deliberate breaks all caught. Nothing the player sees has changed. See "Phase 8d-2a".
+- **Phase 8d-2b (the page's hooks, the client still not started): done.** `telemetry/tracker.ts` (what a game reports) and `telemetry/errors.ts` (script errors without anything identifying) are pure and unit-tested; `boot/37-telemetry.ts` reads the page's state and feeds them: solo games, versus and online matches, personal bests, perf samples, script errors, install, update. **The client is deliberately not started yet**, so nothing is sent; it starts in 8d-2c together with the TELEMETRY switch and the first-run notice. Details below.
+- **Phase 8d-2c (the client started, the notice, Options, `PRIVACY.md`, room events): done.** The client starts at boot only after the first-run notice is answered (or was seen, or telemetry is off); Options has a Privacy group (USAGE DATA switch, WHAT IS SENT, ERASE MY DATA); `room_create` and `room_join` are recorded; `PRIVACY.md` is written; and a real-server browser check (`tests/harness/check_telemetry.py`) passes. It found and fixed a real bug: a player who left an online match lost their game row. Details in "Phase 8d-2c". (The notice and the Options Privacy group of this phase were removed again in 8d-2d.)
+- **Phase 8d-2d (the owner's decision: players see nothing about usage data): done.** The first-run notice, the Options Privacy group (USAGE DATA, WHAT IS SENT, ERASE MY DATA), `ui/privacy.ts`, `telemetry/consent.ts`, `telemetry/notice.ts`, the storage key `tetris_telemetry_notice` and the question of a link to `PRIVACY.md` are gone. The client starts at boot whenever the page has an identity and a server that takes telemetry; a browser storage value `tetris_telemetry=off` still stops everything. `PRIVACY.md` is now a reference for operators. `check_telemetry.py` rewritten and passing (also with a deliberate break caught). See "Phase 8d-2d".
+- **Next:** push the 8d-2d zip to the test repo and read the CI run; then whatever `docs/PLAN.md` lists next (the room list endpoint, Grafana business dashboards on PostgreSQL, accounts later).
+- **Earlier plan for 8d-2:** wiring the client into the page: `telemetry/index.ts` (the page's real dependencies, see "Phase 8d-1"), the hooks that note games and sessions (see the list there), the TELEMETRY switch and ERASE MY DATA in Options, the first-run notice, `PRIVACY.md`, and a browser check against the fake and the real server. Push the zip to the test repo again afterwards. Then whatever `docs/PLAN.md` lists next (the room list endpoint, Grafana business dashboards on PostgreSQL, accounts later).
 - Plan: `docs/PLAN.md` (unchanged; the corrections below supersede it where they differ).
+
+## Phase 8d-2d - players see nothing about usage data (done)
+
+Started from `TetriZZ_phase8d2c.zip`. Decision (owner, 21 Nov 2026), answering the open question of 8d-2c (should the notice link to `PRIVACY.md`): nothing about usage data is to be shown at all, because these are not personal data that players need to know or accept. So there is no link, and no notice either.
+
+**Removed**
+
+- The first-run notice, its text (`telemetry/notice.ts`) and the consent flow that held the client back until it was answered (`telemetry/consent.ts`, with its 9 unit tests in `tests/unit/telemetry-consent.test.ts`, including the test that kept the notice and `PRIVACY.md` in step).
+- `ui/privacy.ts` (the notice dialog, the information dialog, the switch, ERASE MY DATA), the Options Privacy group (three rows and their handlers in `ui/screens.ts`) and `syncPrivacyGroup` in `ui/settings.ts`.
+- The storage key `tetris_telemetry_notice` (`STORAGE_KEYS`, `TELEMETRY_NOTICE_KEY`).
+
+**What the page does now**
+
+- `startPageTelemetry()` (no argument) waits for the network settings, returns `unavailable` when the page has no identity or no server address that takes telemetry, and otherwise starts the client at once. Nothing is shown. `pageTelemetry()` is still null until the client has started.
+- Kept on purpose: `tetris_telemetry=off` in browser storage. The client honours it (notes nothing, sends nothing, not even a first message). The harness pages that configure a server rely on it. It has no screen.
+- Kept on purpose: the client's `setEnabled` and `eraseMyData`, the server's opt-out and erase endpoints and their tests. Nothing in the page's screens calls them now; accounts and a profile page will need them. Dead code in the page's sense, but part of the tested client.
+- `PRIVACY.md` is rewritten as a reference for operators (what is sent, what is not, the controls that exist, retention, a note that whether players must be told depends on where they are and on local rules, not legal advice, and where a notice would go if it is ever needed). The notice and the Options text are no longer promised anywhere. `docs/PLAN.md` is unchanged and still describes the opt-out switch and a link; this entry supersedes it.
+
+**Checked**
+
+- `npx vitest run`: 44 files, 629 tests passed, 2 skipped (638 before, minus the 9 consent tests). Typecheck clean, Prettier clean, ESLint 0 errors (78 warnings, all in existing code).
+- `tests/harness/check_telemetry.py` rewritten, 20 checks pass against the real built server: no dialog and nothing about usage data on the menu or in Options (A3 to A5, B1, B2); the client starts at once and `app_start` and a solo game reach the database (A1, A2, C1, C2); a page with `tetris_telemetry=off` makes no telemetry request and the server never hears of it (D1 to D3); two pages in one online room send one `room_create` and one `room_join` and the match is one game with two rows (E1 to E7). Deliberate break: putting a `data-privgrp` row back in Options made B1 and B2 fail; restored.
+- Harness on both builds: solo traces, the 4-player bot trace and the fixtures identical to the goldens. Screens (single file): 76 shots, 24 failing, worst 8.4473 %, the same as before (the known font gap; no Options shot among them). `check_network_config`, `check_backend_pick` and `check_server_room` pass on the multi-file build.
+
+**Not checked**
+
+- ERASE MY DATA and the opt-out switch no longer run in a browser (no screen). The client and API tests cover the calls; `check_telemetry.py` no longer proves them end to end.
+- `check_telemetry.py` is still not in CI. `check_front_door` (needs Caddy) and `check_server_real` (fails at A1 in this sandbox) were not run.
+- CI has not run this zip.
+
+**Open items**
+
+- Rooms made through the LAN screen and the relay screen's own flow are not counted as room events (unchanged from 8d-2c).
+- The client now starts at boot as soon as the network settings are known, so a very fast player can be in a game before it starts; those first moments are simply not noted.
+- Accounts do not exist yet; when they do, `PRIVACY.md` must say what is linked to them.
+
+## Phase 8d-2c - the client started, the notice, Options, `PRIVACY.md`, room events (done)
+
+Started from `TetriZZ_phase8d2b.zip`. The page now sends telemetry when it has a server that takes it and the player has not said no. **Superseded in 8d-2d:** the first-run notice, the Options Privacy group and everything about them in this section were removed on the owner's decision; the rest stands.
+
+**What was built**
+
+- `telemetry/consent.ts` (pure, `startWhenAllowed`): decides when the client may start. No identity or no server address: nothing starts and nothing is shown. The player switched telemetry off earlier, or has seen the notice: the client starts. Otherwise the notice is shown and the client starts only after the answer; a page closed with the notice open has sent nothing. TURN OFF switches telemetry off before the client starts (`setEnabled(false)`), and the client tells the server at start.
+- `telemetry/notice.ts`: the notice text (title, seven lines). `PRIVACY.md` says the same in more detail; `tests/unit/telemetry-consent.test.ts` keeps the two from drifting (the notice's promises must appear in `PRIVACY.md`).
+- `telemetry/index.ts`: `startPageTelemetry(showNotice)` (the page supplies the dialog so this folder never imports the UI). The client exists as soon as it is made but `pageTelemetry()` stays null until it has started, so nothing is noted before the player could say no.
+- `ui/privacy.ts`: the first-run notice (OK keeps it on; TURN OFF, or Esc, switches it off), the information dialog, the switch, and ERASE MY DATA (asks first, then says whether the server was reached; if not, the request is kept and sent later).
+- Options: a Privacy group with USAGE DATA ON/OFF, WHAT IS SENT and ERASE MY DATA, shown only when the page has a telemetry server (`syncPrivacyGroup` in `ui/settings.ts`; hidden again once the server answered 404). The switch applies at once; it does not wait for SAVE.
+- Storage key `tetris_telemetry_notice` (in `STORAGE_KEYS`; `TELEMETRY_NOTICE_KEY` in `telemetry/client.ts`).
+- Events: `roomEntered { how, backend }` on the bus, emitted by `noteRoomEntered` from the six create/join success points in `net/online-lobby.ts` (a reconnect to a room the player already had is not a join); `boot/37-telemetry.ts` records `room_create` / `room_join` with `{ backend }`. New before-event `leaveOnlineRoom`, emitted at the start of `leaveOnlineRoom` and `forcedLeave`.
+- `PRIVACY.md` at the repo root: what is sent, what is not, the player's choices, retention (events 30 days, games and sessions 180 days, daily totals without any player id for ever, a player's own daily numbers and personal bests until erased), notes for operators.
+
+**A bug found and fixed**
+
+A player who left an online match through the menu lost their game row (the match had one row instead of two). `leaveOnlineRoom` clears the room's state (the remote stations, the online flag) before it calls `quitToMenu`, so the quit hook could not read the page's own numbers. `boot/37-telemetry.ts` now reads them on the new `leaveOnlineRoom` before-event, while the room is whole (`quitVersus`). Proved with `check_telemetry.py`: with the hook removed, F5 fails; with it, it passes.
+
+**How it was checked**
+
+- `tests/harness/check_telemetry.py` (new; real time, about 2 minutes): the built page against the real built server with a SQLite file. Build the page with `TETRIZZ_SERVER_URL=http://127.0.0.1:18795`, then `python3 tests/harness/check_telemetry.py <dist> [<server>/index.js]`. It proves: the notice is shown and nothing is sent before it is answered; OK starts the client and the first batch (with `app_start`) arrives; the switch opts out and back in at the server, and a game played while off sends nothing; a game played while on reaches the database; ERASE MY DATA removes every row of the player; TURN OFF at the first start reaches the server as an opt-out with no event and no game; and two pages in one online room send one `room_create` and one `room_join`, and the match is ONE game with one row per player (the match id path, `takeMatchId`, now ran with two real pages).
+- Lesson for harness checks: waiting for the database must go through the browser connection (`page.wait_for_timeout`), not `time.sleep`; the pages' requests pass through Playwright route handlers that only run while the connection is pumped, so a plain sleep stalls them and the page aborts its request after 10 seconds.
+- The harness pages that configure a server (`check_server_room`, `check_server_real`, `check_backend_pick`, `check_front_door`, `check_network_config`, and `open_page` in `check_relay_handshake`) now set `tetris_telemetry=off`, so the notice does not block them and they send nothing. Pages that configure no server never show the notice.
+- `npx vitest run`: 45 files, 638 tests passed, 2 skipped. 9 new tests (consent flow, notice against `PRIVACY.md`). Typecheck clean, Prettier clean, ESLint 0 errors (78 warnings in existing code).
+- Harness, single-file and multi-file builds: solo traces and the 4-player bot trace identical to the goldens, fixtures pass. The screenshot part fails on 24 of 76 shots, worst 8.4473 %, the same numbers as the untouched 8d-1 and 8d-2a builds in this sandbox (the known font gap); the new Privacy rows are hidden on pages without a server, so no shot changed.
+- `check_server_room` and `check_backend_pick` pass on the multi-file build after the last change; `check_network_config` passes. `check_front_door` needs Caddy and was skipped. `check_server_real.py` was not run (it fails at A1 in this sandbox, where the page's socket never reaches its proxy); `check_telemetry.py` ran two pages in a room on the real server with direct sockets, without that proxy.
+
+**Open items**
+
+- (Resolved in 8d-2d: there is no notice and no link.)
+- Rooms made through the LAN screen and the relay screen's own flow (both end in `lanEnterOnlineLobby`) are not counted as room events; only the six online-lobby success points are.
+- The notice is shown at boot after the network settings are known; a very fast player could be in a game by then. Not handled.
+- `check_telemetry.py` is not in CI (it needs a page build for port 18795 and the server build).
+- Accounts do not exist yet; when they do, `PRIVACY.md` must say what is linked to them.
+
+## Phase 8d-2b - the page's hooks (done; the client is not started yet)
+
+Started from `TetriZZ_phase8d2a.zip`. The page now notes its games and errors, but `pageTelemetry()` is still null, so every call is a no-op and nothing is sent. Starting the client is the first thing 8d-2c does, together with the TELEMETRY switch and the first-run notice, so that no page can send anything before the player can say no.
+
+**What was added**
+
+- `apps/web/src/telemetry/tracker.ts`: `createGameTracker(sink, playerId, now)`. Pure: takes snapshots, writes `record`, `recordGame` and `recordHistory` calls. Solo and versus are separate (`soloStarted/soloEnded/soloQuit`, `versusStarted/versusEnded/versusQuit`, `open()`).
+- `apps/web/src/telemetry/errors.ts`: `describeError` (name, a message of at most 120 characters with long tokens blanked, `file.js:line` without any path, a hash of the top three stack frames) and `createErrorReporter` (each distinct hash once, at most five per page load).
+- `apps/web/src/boot/37-telemetry.ts` (imported last in `main.ts`): the only place that reads page state for telemetry. Hooks on the event bus: `startCountdown` (before: close an open solo game as quit; after: note the start), `gameOver` (before: remember the saved best; after: report), `vsStartMatch`, `vsMatchEnd`, and the new `quitToMenu`. Plus `error`, `unhandledrejection`, `appinstalled` and the service worker's `controllerchange` (only when the page was already controlled, so a first install does not count as an update).
+- `quitToMenu` now emits a `quitToMenu` before-event (the event map has it). Nothing listens besides telemetry, so the game is unchanged.
+- `onlineSessionState.onlineMatchStamp` (`{ ts, order }`): the host sets it where it builds `settings.st`, a guest sets it in `onNetStart` from `settings.st` and `order`. The telemetry hook takes it at match start and clears it; a stamp older than two minutes is ignored. It feeds `matchGameId` so every page of one online match reports the same game id (8d-2a).
+
+**What is reported (the rules, so the dashboards can rely on them)**
+
+- A game that ended, or was left through the menu after at least one piece, is one game with the player's own row. A game left with no piece played is not reported. A tab that is closed or reloaded mid-game is not reported (there is no safe moment to read it).
+- Modes: `endless`, `sprint`, `ultra`, `practice` for solo; `vs-<submode>` for local versus and `online-<submode>` for online (for example `vs-battle`, `online-wide`).
+- Results: sprint is `win` when the line target was reached and `loss` when the board topped out first; endless, ultra and practice end as `finished`; versus is `win` or `loss`; leaving through the menu is `quit`.
+- Versus rows use the player's own station (board 1). A page with no human on board 1 reports nothing. `bots` counts bot stations that are not remote online players; `botLevel` is the first bot's level. PPS and APM use the player's own play time; the game's `durationMs` is the longest play time of any player.
+- Events: `game_start` (mode), `perf_sample` once per finished solo game or match with at least 120 frames (mode, fps, median, p95 and max frame ms, bot think ms, quality tier), `js_error`, `install`, `update_applied`. History: `personal_best` (score, or time in ms for sprint) using the page's own rule for a record.
+- Decided here, easy to change: no separate `game_end` or `match_result` event, because the game row is that data and also covers quits.
+
+**Checks**
+
+- 22 new unit tests (`tests/unit/telemetry-tracker.test.ts`); ten deliberate breaks (quit with no piece, dropped match id, sprint win, seat clamp, personal best, start stamp, long tokens kept, dedupe, error limit, path leak) each failed the tests and were restored. Whole suite: 629 passed, 2 skipped. Prettier, ESLint (0 errors) and `tsc` clean; both builds pass.
+- Harness on the single-file build: solo traces, the 4-player bot trace and the fixtures are unchanged (`verify.py --part solo`, `vs`, `fixtures`: PASS).
+- Live-state check in Chromium on a throwaway build whose sink also logged to `window.__tseen` (not kept): a solo endless game to game over gave a `finished` row, `personal_best`, `perf_sample` and `game_start`; a sprint left through the menu gave a `quit` row; a versus match against one bot gave a `loss` row with `bots: 1`, `botLevel: 7`, PPS and APM; no page errors.
+
+**Not checked yet**
+
+- The online match id path (`takeMatchId`, the two-minute age rule, the host and guest stamps) has not run with two pages in a room; `matchGameId` itself is covered by 8d-2a's tests.
+- Nothing was sent to a server (the client is not started). The end-to-end check against the fake and the real server belongs to 8d-2c.
+- Screens part of the harness not rerun (no UI changed).
+
+**Next: Phase 8d-2c**
+
+1. Start the client at boot (`startPageTelemetry()` in `boot/37-telemetry.ts`), only with the switch and notice below in place.
+2. Options: a TELEMETRY switch (shown only when a server is configured) and ERASE MY DATA behind the page's `askConfirm`; the choice goes to the server through the client's existing consent call.
+3. The first-run notice (what is sent, what is not, how to turn it off), shown once.
+4. `PRIVACY.md` at the repo root and a link from the notice.
+5. Room events (`room_create`, `room_join`): entry points are scattered in `net/online-lobby.ts`, `net/relay.ts` and the LAN module (the `onlineRoomId =` assignments), so decide whether to add one `roomEntered` event and emit it from the success points.
+6. Browser check: the built page against the fake server and the real server (`check_server_real.py` pattern), including two pages in one online room to prove the shared game id and the one-game-two-rows result.
+
+## Phase 8d-2a - one game per match, the page's real dependencies (done; not wired into the page yet)
+
+### Decision (owner, 20 Nov 2026)
+
+A match of four humans is one game with four rows, not four games. More accurate for the dashboards; it needed a small server write, "add my row to this game".
+
+### Server
+
+- `recordGame(game, rules?)` now returns `created`, `joined`, `duplicate` or `refused`. When the id exists, the rows of the report that the game does not have yet are added in the same transaction; the game's own fields stay as the first report had them (so a multiplayer game's device class and app version are the first reporter's).
+- A report belongs to an existing game only if its mode is the same and its start is within 2 minutes (`GAME_JOIN_WINDOW_MS`, option `gameJoinWindowMs`), and the game keeps at most `TELEMETRY_MAX_GAME_PLAYERS` (16) rows. Otherwise `refused`: nothing is written and the ack counts one in `rejected`. The check is inside the transaction; two joins at the same instant can overshoot the limit by a row (not tried on PostgreSQL).
+- The ack has an optional `joined` count (left out when none); `/api/v1` stats have `gamesJoined`; `/metrics` has `telemetry_items_total{kind="game",outcome="joined"}`.
+- The sender-only rule is unchanged (its existing test still passes, and a new one tries to smuggle in a third player's row while joining). An opted-out player adds nothing. ERASE MY DATA already handled shared games: it removes that player's row and the game only when no row is left (new contract test).
+- A row joined after its day was rolled up shows in that day's numbers only when the day is rolled up again (a test shows that a second `rollupDay` picks it up). Not checked: whether the janitor rolls recent days up more than once.
+
+### Page
+
+- `GameReport.id` is optional: a valid shared id is used, anything else gets the client's own fresh id.
+- `telemetry/address.ts`: `telemetryBase(configured, origin)` (http(s) or ws(s) URL, or a path on the page's origin; null switches telemetry off) and `matchGameId({room, stamp, order})`, a hash of the room id, the host's start stamp and the player order, valid for the server's id format, null when a part is missing (then each page reports under its own id).
+- `telemetry/page.ts`: `createPageTelemetry(env)` (fetch with credentials omitted, no cache, a 10 s abort and `Retry-After`; `sendBeacon` with the string body; IndexedDB store or the memory store; storage that never throws; ids and jitter from crypto bytes, never `Math.random`) and `watchPage` (`online`, `pagehide`, hidden `visibilitychange`). All browser objects come in through `PageEnv`.
+- `telemetry/index.ts`: `startPageTelemetry()` builds the env from the real `navigator`, `screen`, `matchMedia`, `netConfig`, `clock` and the player key, waits for `networkConfigReady()` (the runtime `config.json` may name the server), then starts the client; `pageTelemetry()` returns it or null. The two storage keys `tetris_telemetry` and `tetris_telemetry_todo` are in `STORAGE_KEYS`.
+
+### Checked
+
+- `npx vitest run`: 43 files, 607 tests passed, 2 skipped (the PostgreSQL contract). New: 6 shared-game contract tests (both databases' contract, run on SQLite here), 5 API tests including two real page clients reporting one match to the real API (the "feed the client's batches to the real server" item of 8d-1 is done: each client's start event, an event, a game and a history line were sent through `createTelemetryClient` to the real API and its queue emptied; the server then held both players' events and one game with both rows, and one client's ERASE MY DATA left the other's row), 26 page tests.
+- Typecheck clean in every workspace, Prettier clean, ESLint 0 errors (78 warnings, none in the files of this step), both builds.
+- Nine deliberate breaks, each failing at least one test: later row never added, same-mode/time check removed, row limit ignored, own-row filter removed, cookies sent, request timeout never armed, line-up left out of the match id, `ws:` not turned into `http:`, hidden check dropped. Files restored after each.
+- Harness on the single-file build: solo traces and the 4-player bot trace identical to the goldens, fixtures pass. The screenshot part fails on 24 of 76 shots, worst 8.4473 %, and the untouched 8d-1 build fails the same 24 shots in this sandbox (the percentages differ by 0.0002 %), so it is the known font gap, not this step. The page does not import the telemetry code yet, so its behaviour is unchanged.
+
+### Not checked
+
+- `telemetry/index.ts` and the beacon path have not run in a browser (nothing imports `index.ts`); `createIndexedDbStore` still ran against `fake-indexeddb` only.
+- PostgreSQL: the contract tests for the new join rules were not run on it (no database here; CI runs them).
+- The harness' `Math.random` and boot rules are not exercised until the page starts the client.
+
+### Plan for 8d-2b (the page)
+
+1. Start the client at boot (`startPageTelemetry` after the identity), only when a server is configured.
+2. The match id for online matches: the host makes `settings.st = {order, seed, ts}` and sends it in `start`; a guest's `onNetStart` copies it into the lobby state, the host's own copy is not stored, so keep the stamp on both sides (a new field in the online session state), build the id with `matchGameId({room, stamp, order})`, and fall back to the client's own id when any part is missing. The seed alone is not unique (it is the same for every match of a room).
+3. Hooks: `game_start` and `game_end` (`startCountdown`, `gameOver`; solo modes use `game.score`, `lines`, `pieces`, `playMs`), `match_result` (`vsMatchEnd`), the game record for every mode with the player's own row, online room events, `js_error` (hashed stack, rate limited), `perf_sample`, `install`, `update_applied`, `personal_best` history.
+4. Options: a TELEMETRY switch (only when a server is configured), ERASE MY DATA with a confirmation, and the first-run notice.
+5. `PRIVACY.md`, and a browser check against the fake and the real server. Push the zip to the test repo afterwards.
+
+## Phase 8d-1 - the page's telemetry client (done; not wired into the page yet)
+
+### What the CI run of the 8c-4d zip showed (logs read in this chat)
+
+- Every job passed: `check` (39 files, 545 tests, lint 0 errors and 78 warnings, types, both builds), `deploy-files`, `deploy-stack` lite and postgres and monitoring (`all good (monitoring)`: the Watchdog reached the heartbeat address through Prometheus and Alertmanager), `regression` (the screenshot step is informational: 72 of 76 shots differ, worst 8.76 %, the known font gap).
+- `pages.yml`: build and `deploy-pages` v5 succeeded, the site is at `https://shayanzz.github.io/tetrizz-test/`. Whether Settings, Pages, Source is already "GitHub Actions" cannot be read from these logs; see 8c-4d.
+- One odd line: `webhook deliveries failed so far: ?`. The step only prints; it never fails on it. Cause: Alertmanager 0.35's metric carries a `reason` label (`alertmanager_notifications_failed_total{integration="webhook",reason=...}`), so the exact-match grep found nothing. Fixed in `tests/harness/check_stack.sh`: it matches the label prefix and sums the series (tried on sample metrics). The `AlertDeliveryFailing` rule already uses `sum by (integration)`, so it was never affected. Not run in Docker; the next CI run shows a number.
+
+### What exists (`apps/web/src/telemetry/`, imported by nothing yet)
+
+- `queue.ts`: `createQueue(store, limits, warn)`. Items are events, games and history lines, each with the id the page made up. Capped at 1,000 items and 1 MB; an item over 8 KB is refused. When full it drops performance samples first, then other events, then history, then games, oldest first inside each group. `take` hands out the oldest items within the per-kind limits and a byte cap. Items noted before `load()` finishes are held and added after it, so they cannot take a stored item's place. A failing store is reported once and the queue goes on in memory. `createMemoryStore` is the fallback.
+- `idb-store.ts`: `createIndexedDbStore(indexedDB)`, one object store keyed by `seq`.
+- `device.ts`: `collectDevice(env)` never throws. It sends only what the server's user agent parsing cannot say: device class (touch and screen size, so an iPad that claims to be a Mac is a tablet), screen bucket (short side first, rounded to 20), pixel density (quarters), cores (a bucket), memory, language, display mode (single file, installed app, browser) and, from Chromium's high-entropy values, system name and version (Windows 11 read from platform version 13 or more) and Android model. Page fields override the server's parse (`mergeDevice`), so `os` is sent only when the high-entropy values were read.
+- `client.ts`: `createTelemetryClient(deps)`; every outside thing (identity, server address, store, key-value storage, HTTP, beacon, clock, random, timers, online state) is injected. Calls: `start`, `record(kind, payload)`, `recordGame`, `recordHistory`, `flush`, `flushOnHide`, `setEnabled`, `eraseMyData`, `online`, `status`.
+
+### How it behaves (decided here, easy to change)
+
+- Nothing is noted or sent without an identity, a server address, and telemetry on. A server that answers 404 (no `/api/v1`) switches telemetry off for the rest of the page load and empties the queue; a 403 `identity` does the same.
+- Sending: 20 s after the first item (1 s when 50 or more are waiting; 3 s after start), on `online`, and on page hide through `sendBeacon` (the key is in the body, so no header is needed). Up to 5 batches per flush, within the server's limits (200 events, 20 games, 50 history lines, about 200 KB). The POST is `text/plain`, so a page on another origin needs no preflight; PUT and DELETE carry `Authorization: Bearer <key>` and do.
+- A batch is forgotten only after a 200 answer (the server answers stored, duplicate, rejected and stale items alike, all of which the page can forget). Network error, 5xx or 429: the queue stays and the wait grows from 30 s up to 15 min (with jitter, and at least the `Retry-After` the server sent). 400, 413 or 415: the batch is halved until a single item is left, which is dropped, so one bad item cannot block the queue.
+- Every batch carries the session (id, start, `endedAt` = now, version, display mode, device class); the device goes with the first batch until the server has answered it. Items noted offline carry `offline: true`, and so does the session if it began offline. A page hide sends the queue and the new session end once; items already handed to the beacon are not handed over again, and stay queued until a normal answer confirms them (the server dedupes by id).
+- The player's choices: `setEnabled(false)` empties the queue, stops noting, and tells the server (`PUT .../telemetry {optOut:true}`); a failure is remembered in `tetris_telemetry_todo` and retried at the next flush, start or `online`. `eraseMyData()` empties the queue and sends `DELETE`; if telemetry is off it then sends the opt-out again (the delete removes the flag). If the server says the player is opted out (another browser with the same key), the page switches off too, unless a choice of its own is still waiting to be sent.
+- Storage keys: `tetris_telemetry` (`off` when switched off; absent means on) and `tetris_telemetry_todo`. **Both must be added to `STORAGE_KEYS` in `core/storage.ts` when the client is wired in**, and the todo key should not go into a settings export (a pending erase must not travel to another device).
+- No `Math.random` is read (random bytes come from `crypto`, which the page identity needs anyway), so the harness' seeded sequence is not disturbed. Telemetry is off wherever no server is configured, which includes every harness page that does not configure one.
+
+### Checked
+
+- 19 new tests (`telemetry-queue`, `telemetry-device`, `telemetry-client`; `fake-indexeddb` 6.2.8 is a new dev dependency, looked up live on 20 Nov 2026 as the latest; published 8 Nov): 564 pass in total, 2 skipped as before; format, lint (0 errors, 78 warnings as before), typecheck and both builds clean. The built page is unchanged because nothing imports the new files.
+- The tests found one real fault before it shipped: two flush timers (the 20 s one from `app_start` and the 3 s one from start) kept the later one, so the first batch waited 20 s. The timer now keeps the earlier deadline.
+- Eleven deliberate breaks, each caught: samples not dropped first, cap not enforced, items noted before load not held, confirmed items never removed, no backoff on server errors, opt-out ignored, erase not repeating the opt-out, beacon repeating items, opt-out without the key, a refusal not remembered, an invalid batch never shrinking.
+
+### Not checked
+
+- No real browser: `createIndexedDbStore` ran against `fake-indexeddb` only (a private window or blocked storage would reject and fall back to memory; that path is tested with a failing store, not in Chromium). `sendBeacon` and `getHighEntropyValues` were not run anywhere.
+- Not run against the real server: the client's request shapes were read from `api.ts` and `telemetry.ts` and checked against `parseTelemetryDevice`, but no test sends a batch built by the client into `parseTelemetryBatch` or the real `/api/v1`. Done in 8d-2a.
+- The rule for who reports a game (8c-2a) was open here; decided in 8d-2a: one game per match, each page reports its own row.
+
+### Plan for 8d-2 (the page)
+
+1. `telemetry/index.ts`: real dependencies (identity from `net/identity.ts`, the server address from `netConfig` with the same rules as `serverSocketUrl` but http(s), `createIndexedDbStore(indexedDB)` or the memory store, `fetch` with a timeout and `Retry-After`, `navigator.sendBeacon`, `crypto` ids, the `online` and `pagehide`/`visibilitychange` listeners, `device` from `collectDevice` with the real `navigator`, `screen`, `matchMedia`).
+2. Hooks: `app_start` (done by `start`), `game_start` and `game_end` (the `startCountdown` and `gameOver` events; solo modes use `game.score`, `lines`, `pieces`, `playMs`), `match_result` (`vsMatchEnd`), online room events, `js_error` (hashed stack, rate limited), `perf_sample` (from the overlay's counters), `install` and `update_applied`, `personal_best` history.
+3. Options: a TELEMETRY switch (shown only when a server is configured), ERASE MY DATA with a confirmation, and the first-run notice (with onboarding).
+4. `PRIVACY.md`, `docs/SERVER.md` and `CHANGELOG.md`.
 
 ## Phase 8c-4d - the second CI run of the stack (done)
 

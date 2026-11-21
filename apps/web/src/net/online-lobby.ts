@@ -4,6 +4,7 @@ import { mulberry32 } from "@tetrizz/core";
 import { fxRandom, gameRandom } from "../core/random";
 import { PIECES } from "@tetrizz/core";
 import { escapeHtml } from "../core/escape";
+import { emitBefore, emitEvent } from "../core/events";
 import { log } from "../core/logger";
 import { storage } from "../core/storage";
 import { HID, LOCK_MS, clamp, colsForMode, configState, visForMode } from "../core/config";
@@ -161,6 +162,12 @@ function roomRequestBase(roomId) {
 /** The backends to try for a new or joined room, for the player's pick in Options. */
 const backendKindsToTry = () => roomBackendKinds(netConfig.current, configState.onlineBackend);
 
+/** Tells the page a room was made or joined; a reconnect to a room the player already had is not a join. */
+function noteRoomEntered(how, backend) {
+  if (how === "join" && onlineLobbyState._autoReconnecting) return;
+  emitEvent("roomEntered", { how, backend });
+}
+
 function enterCreatedSupabaseRoom(made) {
   onlineSessionState.netMode = "supabase";
   console.info("[TetriZZ net] backend: Supabase Realtime");
@@ -170,6 +177,7 @@ function enterCreatedSupabaseRoom(made) {
   onlineSessionState.onlineJoinedRoomAt = clock.wall();
   setupOnlineChannel(made.roomId);
   showOnlineLobbyUI();
+  noteRoomEntered("create", "supabase");
 }
 
 function enterCreatedRelayRoom(made) {
@@ -186,6 +194,7 @@ function enterCreatedRelayRoom(made) {
     },
   ];
   showOnlineLobbyUI();
+  noteRoomEntered("create", "relay");
 }
 
 function enterCreatedServerRoom(made) {
@@ -203,6 +212,7 @@ function enterCreatedServerRoom(made) {
     },
   ];
   showOnlineLobbyUI();
+  noteRoomEntered("create", "server");
 }
 
 export async function createOnlineRoom() {
@@ -321,6 +331,7 @@ function enterJoinedRelayRoom(joined) {
     onlineSessionState.onlineRoomPwdH = joined.settings.pwdH;
   clampVs();
   showOnlineLobbyUI();
+  noteRoomEntered("join", "relay");
 }
 
 function enterJoinedServerRoom(joined) {
@@ -337,6 +348,7 @@ function enterJoinedServerRoom(joined) {
     typeof joined.settings.pwdH === "string" ? joined.settings.pwdH : "";
   clampVs();
   showOnlineLobbyUI();
+  noteRoomEntered("join", "server");
   if (onlineLobbyState._autoReconnecting)
     netSend("rejoin-req", { sender: onlineSessionState.myPlayerId });
 }
@@ -356,6 +368,7 @@ function enterJoinedSupabaseRoom(joined) {
   onlineSessionState.isOnlineHost = joined.isHost;
   setupOnlineChannel(joined.roomId);
   showOnlineLobbyUI();
+  noteRoomEntered("join", "supabase");
 }
 
 /** Tries one backend. The relay and the own server check a typed password themselves; Supabase leaves it to the player's page. */
@@ -1957,6 +1970,7 @@ export function hostStart() {
   settings.seed = onlineSessionState.onlineSeed;
   if (roomPwdH()) settings.pwdH = roomPwdH();
   settings.st = { order: order, seed: onlineSessionState.onlineSeed, ts: clock.wall() };
+  onlineSessionState.onlineMatchStamp = { ts: settings.st.ts, order: order.slice() };
   if (onlineSessionState.netMode === "supabase" && onlineSessionState.sb) {
     onlineSessionState.sb
       .from("rooms")
@@ -2056,6 +2070,7 @@ export async function swapRole() {
 }
 
 export async function leaveOnlineRoom(announce) {
+  emitBefore("leaveOnlineRoom");
   onlineSessionState.leavingRoom = true;
   clearLastRoom();
   onlineSessionState.onlineGameActive = false;
@@ -2101,6 +2116,7 @@ export async function leaveOnlineRoom(announce) {
 }
 
 export function forcedLeave(msg) {
+  emitBefore("leaveOnlineRoom");
   onlineSessionState.leavingRoom = true;
   clearLastRoom();
   onlineSessionState.onlineGameActive = false;

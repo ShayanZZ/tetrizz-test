@@ -91,6 +91,24 @@ export interface GameInput {
   players: GamePlayerInput[];
 }
 
+/**
+ * What a later report may do to a game that already exists: add the reporting player's own rows.
+ * Several pages report one match, each with the same game id and only its own row.
+ */
+export interface GameJoinRules {
+  /** The later report must have the same mode and start within this many milliseconds. */
+  windowMs: number;
+  /** A game never holds more rows than this. */
+  maxPlayers: number;
+}
+
+/**
+ * `created`: a new game. `joined`: the game existed and at least one row was added to it.
+ * `duplicate`: nothing new (every row was already stored). `refused`: the game exists but the report
+ * does not belong to it (other mode, start too far apart) or the game is full; nothing was written.
+ */
+export type GameWrite = "created" | "joined" | "duplicate" | "refused";
+
 export interface GameRecord extends Omit<GameInput, "players"> {
   sessionId: string | null;
   bots: number;
@@ -209,8 +227,11 @@ export interface Repository {
   endSession(id: string, at: number): Promise<void>;
   getSession(id: string): Promise<SessionRecord | null>;
 
-  /** Stores a finished game with its players. `false` when this id was already stored. */
-  recordGame(game: GameInput): Promise<boolean>;
+  /**
+   * Stores a finished game with its players. When the id is already stored, the rows of this report
+   * that the game does not have yet are added to it (the first report's other fields stay).
+   */
+  recordGame(game: GameInput, join?: GameJoinRules): Promise<GameWrite>;
   getGame(id: string): Promise<GameRecord | null>;
 
   /** Stores raw events and returns how many were new; ids already stored are skipped. */

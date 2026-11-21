@@ -165,8 +165,8 @@ if [[ $variant == monitoring ]]; then
   done
   grep -qF 'POST /ping' <<<"$hits" || fail "the heartbeat address got no POST (alerts do not reach Alertmanager's webhook): $hits"
   grep -qF 'Watchdog' <<<"$hits" || fail "the heartbeat request is not the Watchdog alert: $hits"
-  failed=$(inside http://alertmanager:9093/metrics 2>/dev/null | grep -F 'alertmanager_notifications_failed_total{integration="webhook"}' | awk '{print $2}' || true)
-  echo "webhook deliveries failed so far: ${failed:-?}"
+  failed=$(inside http://alertmanager:9093/metrics 2>/dev/null | grep -F 'alertmanager_notifications_failed_total{integration="webhook"' | awk '{n += $NF} END {print n + 0}' || true)
+  echo "webhook deliveries failed so far: ${failed:-?} (the first tries fail while the sink starts)"
 fi
 
 step "all good ($variant)"

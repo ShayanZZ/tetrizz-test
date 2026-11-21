@@ -11,6 +11,7 @@
  */
 import Bowser from "bowser";
 import {
+  TELEMETRY_MAX_GAME_PLAYERS,
   TELEMETRY_VERSION,
   type TelemetryAck,
   type TelemetryBatch,
@@ -86,6 +87,8 @@ export interface IngestOptions {
   /** Events older than this are dropped as stale. */
   eventsMaxAgeMs: number;
   gamesMaxAgeMs: number;
+  /** How far apart two pages' start times for one match may be; defaults to two minutes. */
+  gameJoinWindowMs?: number;
   /** Called for a player id the server has never seen; `false` refuses the batch. */
   admitNewPlayer?: () => boolean;
 }
@@ -93,6 +96,8 @@ export interface IngestOptions {
 export type IngestOutcome = { kind: "stored"; ack: TelemetryAck } | { kind: "new-player-limit" };
 
 const MAX_SESSION_AGE_FALLBACK = 400 * DAY_MS;
+/** How far apart two pages' start times for one match may be (their clocks are corrected, but not exactly). */
+const GAME_JOIN_WINDOW_MS = 2 * 60_000;
 
 export async function ingestBatch(
   repo: Repository,
@@ -183,30 +188,38 @@ export async function ingestBatch(
       continue;
     }
     ack.rejected += g.players.length - own.length;
-    const isNew = await repo.recordGame({
-      id: g.id,
-      sessionId: g.sessionId ?? batch.session?.id ?? null,
-      mode: g.mode,
-      startedAt,
-      durationMs: g.durationMs,
-      bots: g.bots ?? 0,
-      botLevel: g.botLevel ?? null,
-      appVersion: g.appVersion ?? batch.session?.appVersion ?? null,
-      deviceClass: g.deviceClass ?? device?.deviceClass ?? null,
-      offline: g.offline === true || receivedAt - startedAt > OFFLINE_LAG_MS,
-      players: own.map((p) => ({
-        playerId: p.playerId,
-        seat: p.seat ?? null,
-        result: p.result,
-        lines: p.lines,
-        score: p.score,
-        pieces: p.pieces,
-        pps: p.pps ?? null,
-        apm: p.apm ?? null,
-      })),
-    });
-    if (isNew) ack.stored.games++;
-    else ack.duplicates.games++;
+    const written = await repo.recordGame(
+      {
+        id: g.id,
+        sessionId: g.sessionId ?? batch.session?.id ?? null,
+        mode: g.mode,
+        startedAt,
+        durationMs: g.durationMs,
+        bots: g.bots ?? 0,
+        botLevel: g.botLevel ?? null,
+        appVersion: g.appVersion ?? batch.session?.appVersion ?? null,
+        deviceClass: g.deviceClass ?? device?.deviceClass ?? null,
+        offline: g.offline === true || receivedAt - startedAt > OFFLINE_LAG_MS,
+        players: own.map((p) => ({
+          playerId: p.playerId,
+          seat: p.seat ?? null,
+          result: p.result,
+          lines: p.lines,
+          score: p.score,
+          pieces: p.pieces,
+          pps: p.pps ?? null,
+          apm: p.apm ?? null,
+        })),
+      },
+      {
+        windowMs: options.gameJoinWindowMs ?? GAME_JOIN_WINDOW_MS,
+        maxPlayers: TELEMETRY_MAX_GAME_PLAYERS,
+      },
+    );
+    if (written === "created") ack.stored.games++;
+    else if (written === "joined") ack.joined = (ack.joined ?? 0) + 1;
+    else if (written === "duplicate") ack.duplicates.games++;
+    else ack.rejected++;
   }
 
   if (events.length) {

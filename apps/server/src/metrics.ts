@@ -170,6 +170,7 @@ export function createMetrics(sources: MetricSources, info: MetricsInfo): Metric
       set(t.eventsDuplicate, { kind: "event", outcome: "duplicate" });
       set(t.gamesStored, { kind: "game", outcome: "stored" });
       set(t.gamesDuplicate, { kind: "game", outcome: "duplicate" });
+      set(t.gamesJoined, { kind: "game", outcome: "joined" });
       set(t.historyStored, { kind: "history", outcome: "stored" });
       set(t.historyDuplicate, { kind: "history", outcome: "duplicate" });
       set(t.itemsRejected, { kind: "any", outcome: "rejected" });

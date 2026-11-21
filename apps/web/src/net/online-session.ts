@@ -60,6 +60,8 @@ export const onlineSessionState = {
   onlineRoomPwdH: "",
   onlineLocalOrder: [] as string[],
   onlineMatchOrder: [],
+  /** The host's start stamp and the player order of the match being started, for the telemetry game id. */
+  onlineMatchStamp: null as { ts: number; order: string[] } | null,
   onlineGlobalIdx: {},
   onlineGameActive: false,
   onlineLiveOrder: [] as string[],

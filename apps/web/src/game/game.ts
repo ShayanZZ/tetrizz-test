@@ -797,6 +797,7 @@ function togglePauseBody() {
 }
 
 export function quitToMenu() {
+  emitBefore("quitToMenu");
   cancelCountdown();
   cancelGoText();
   document.body.classList.remove("onlinePaused");
