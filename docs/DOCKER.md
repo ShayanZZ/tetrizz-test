@@ -124,6 +124,37 @@ The alert rules are in `deploy/prometheus/rules/tetrizz.yml` with unit tests nex
 them, shows them (Alerts page, and the "Alerts firing" tile and table on the Health dashboard) and sends the firing
 ones to Alertmanager, which delivers them (next section).
 
+## Business dashboards
+
+Two more Grafana dashboards read the PostgreSQL database directly: **Players and games** (players and games per day,
+active and new players, play time, games by mode and device, whether new players come back, app versions, devices,
+frame times by device class, script errors, online rooms by backend) and **Player** (one anonymous player: profile,
+games and play time per day, best by mode, personal bests and other tracked changes, devices, recent games; the first
+table lists the most active players and links to the details). They need PostgreSQL, because the SQLite file cannot be
+read by Grafana, so they are a fourth compose file:
+
+```sh
+openssl rand -hex 24        # put the result in .env as ANALYTICS_DB_PASSWORD
+COMPOSE_FILE=compose.yaml:compose.postgres.yaml:compose.monitoring.yaml:compose.analytics.yaml
+docker compose up -d
+```
+
+At every start a one-shot job (`init-analytics-db`, `deploy/postgres/init-analytics.sh`) makes the PostgreSQL role
+`grafana_ro` or brings it up to date. The role can only `SELECT` (on the tables that exist and on any the server
+creates later), cannot write even if a query asks its session to, stops a query after 30 seconds and may hold five
+connections. Grafana gets its password from the environment; the data source file in the repository holds none. The
+queries are in the dashboard files (`deploy/grafana/analytics/dashboards`) and are read-only in Grafana, like the
+others.
+
+What the numbers rest on: the daily charts come from the nightly rollups, which are kept for ever; the tables that look
+at single games and sessions only reach back as far as those rows are kept (180 days), and the ones that read events
+(frame times, errors, rooms) 30 days. A player id is an anonymous installation, not a person. Events come from
+players' browsers, so every query reads them defensively: a payload that is not a number where one is expected is
+skipped, and does not break the panel.
+
+If the server uses a schema other than `public` (`DB_SCHEMA`), set `ANALYTICS_DB_SCHEMA` for the job in
+`compose.analytics.yaml` to the same name.
+
 ## Alerts
 
 Alertmanager is part of the monitoring stack. Its routing is `deploy/alertmanager/routes.yml`; where messages go comes

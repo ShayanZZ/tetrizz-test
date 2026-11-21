@@ -1,0 +1,981 @@
+{
+  "uid": "tetrizz-players",
+  "title": "TetriZZ / Players and games",
+  "description": "Read from the PostgreSQL database. Daily numbers come from the nightly rollups (kept for ever); the rest comes from raw rows, which are kept for 30 days (events) or 180 days (games, sessions). Times are UTC.",
+  "tags": ["tetrizz", "analytics"],
+  "timezone": "utc",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/tetrizz-overview",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Live",
+      "type": "link",
+      "url": "/d/tetrizz-live",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Health",
+      "type": "link",
+      "url": "/d/tetrizz-health",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Players",
+      "type": "link",
+      "url": "/d/tetrizz-players",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Player",
+      "type": "link",
+      "url": "/d/tetrizz-player",
+      "icon": "dashboard"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Players",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"Players\" FROM players WHERE telemetry_opt_out = 0",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Anonymous installations seen so far, without those that switched usage data off."
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Games, all time",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(SUM(value), 0) AS \"Games\" FROM daily_stats WHERE metric = 'games' AND dim = 'all'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Games played, from the rollups. A match of several players counts once."
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Active today",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(MAX(value), 0) AS \"Active today\" FROM daily_stats WHERE metric = 'players_active' AND dim = 'all' AND day = to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD')",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Players with a session or a game since midnight UTC (refreshed by the janitor every few minutes)."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active, last 7 days",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT player_id) AS \"Players\" FROM sessions WHERE started_at >= (extract(epoch FROM now()) * 1000)::bigint - 86400000::bigint * 7",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Active, last 30 days",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT player_id) AS \"Players\" FROM sessions WHERE started_at >= (extract(epoch FROM now()) * 1000)::bigint - 86400000::bigint * 30",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Play time, all time (hours)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(SUM(value), 0) / 3600000.0 AS \"Hours\" FROM daily_stats WHERE metric = 'play_ms' AND dim = 'all'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "description": "Length of finished games, added up."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Games per day, by mode",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, substr(dim, 6) AS metric, value FROM daily_stats WHERE metric = 'games' AND dim LIKE 'mode:%' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Modes are the names the page sends: endless, sprint, ultra, practice, vs-<mode> and online-<mode>."
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Active and new players per day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, CASE metric WHEN 'players_active' THEN 'Active' ELSE 'New' END AS metric, value FROM daily_stats WHERE metric IN ('players_active', 'players_new') AND dim = 'all' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Play time per day (hours)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, value / 3600000.0 AS \"Hours\" FROM daily_stats WHERE metric = 'play_ms' AND dim = 'all' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Games per day, by device",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, substr(dim, 8) AS metric, value FROM daily_stats WHERE metric = 'games' AND dim LIKE 'device:%' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 8,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Sessions per day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, value AS \"Sessions\" FROM daily_stats WHERE metric = 'sessions' AND dim = 'all' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Games by mode (selected range)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT substr(dim, 6) AS \"Mode\", SUM(value) AS \"Games\" FROM daily_stats WHERE metric = 'games' AND dim LIKE 'mode:%' AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date GROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 6,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Do new players come back?",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT DISTINCT player_id, (to_timestamp(started_at / 1000.0) AT TIME ZONE 'UTC')::date AS d FROM sessions), c AS (SELECT id, (to_timestamp(first_seen / 1000.0) AT TIME ZONE 'UTC')::date AS d0 FROM players WHERE telemetry_opt_out = 0 AND first_seen BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000), f AS (SELECT c.d0, EXISTS (SELECT 1 FROM s WHERE s.player_id = c.id AND s.d = c.d0 + 1) AS next_day, EXISTS (SELECT 1 FROM s WHERE s.player_id = c.id AND s.d BETWEEN c.d0 + 1 AND c.d0 + 7) AS within_week FROM c) SELECT COUNT(*) AS \"New players\", COUNT(*) FILTER (WHERE d0 < (now() AT TIME ZONE 'UTC')::date) AS \"Old enough for next day\", ROUND(100.0 * COUNT(*) FILTER (WHERE next_day AND d0 < (now() AT TIME ZONE 'UTC')::date) / NULLIF(COUNT(*) FILTER (WHERE d0 < (now() AT TIME ZONE 'UTC')::date), 0), 1) AS \"Back the next day %\", COUNT(*) FILTER (WHERE d0 <= (now() AT TIME ZONE 'UTC')::date - 7) AS \"Old enough for a week\", ROUND(100.0 * COUNT(*) FILTER (WHERE within_week AND d0 <= (now() AT TIME ZONE 'UTC')::date - 7) / NULLIF(COUNT(*) FILTER (WHERE d0 <= (now() AT TIME ZONE 'UTC')::date - 7), 0), 1) AS \"Back within 7 days %\" FROM f",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 6,
+        "y": 20,
+        "w": 9,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Players who first appeared in the selected range. \"Next day\" means a session on the calendar day after the first one; \"within 7 days\" means any session on days 1 to 7. Only players old enough are counted in each percentage. Sessions are kept for 180 days."
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "App versions in use",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(app_version, 'unknown') AS \"Version\", COUNT(*) AS \"Sessions\", COUNT(DISTINCT player_id) AS \"Players\", to_timestamp(MAX(started_at) / 1000.0) AS \"Last session\" FROM sessions WHERE started_at BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 GROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 15,
+        "y": 20,
+        "w": 9,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Devices (players seen in the range)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT d.device->>'deviceClass' AS \"Class\", d.device->>'os' AS \"System\", d.device->>'osVersion' AS \"Version\", d.device->>'browser' AS \"Browser\", COUNT(*) AS \"Players\" FROM (SELECT DISTINCT ON (player_id) player_id, device FROM player_devices WHERE last_seen BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 ORDER BY player_id, last_seen DESC) d GROUP BY 1, 2, 3, 4 ORDER BY 5 DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Each player counted once, by the newest device description seen in the range."
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "title": "Performance by device class",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(s.device_class, 'unknown') AS \"Class\", COUNT(CASE WHEN jsonb_typeof(e.payload->'fps') = 'number' AND abs((e.payload->>'fps')::numeric) < 1000000000 THEN (e.payload->>'fps')::numeric END) AS \"Samples\", ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN jsonb_typeof(e.payload->'fps') = 'number' AND abs((e.payload->>'fps')::numeric) < 1000000000 THEN (e.payload->>'fps')::numeric END))::numeric, 0) AS \"Median fps\", ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN jsonb_typeof(e.payload->'p95Ms') = 'number' AND abs((e.payload->>'p95Ms')::numeric) < 1000000000 THEN (e.payload->>'p95Ms')::numeric END))::numeric, 1) AS \"Typical p95 frame ms\", ROUND(AVG(CASE WHEN jsonb_typeof(e.payload->'thinkMs') = 'number' AND abs((e.payload->>'thinkMs')::numeric) < 1000000000 THEN (e.payload->>'thinkMs')::numeric END), 1) AS \"Bot think ms\", ROUND(100.0 * COUNT(*) FILTER (WHERE CASE WHEN jsonb_typeof(e.payload->'tier') = 'number' AND abs((e.payload->>'tier')::numeric) < 1000000000 THEN (e.payload->>'tier')::numeric END > 0) / NULLIF(COUNT(CASE WHEN jsonb_typeof(e.payload->'tier') = 'number' AND abs((e.payload->>'tier')::numeric) < 1000000000 THEN (e.payload->>'tier')::numeric END), 0), 1) AS \"At reduced quality %\" FROM events e LEFT JOIN sessions s ON s.id = e.session_id WHERE e.kind = 'perf_sample' AND e.occurred_at BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 GROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "One sample per finished game or match of at least 120 frames. Raw events are kept for 30 days, so a longer range shows only the last 30."
+    },
+    {
+      "id": 17,
+      "type": "table",
+      "title": "Script errors",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT payload->>'hash' AS \"Hash\", MAX(payload->>'name') AS \"Error\", MAX(payload->>'message') AS \"Message\", MAX(payload->>'where') AS \"Where\", COUNT(*) AS \"Count\", COUNT(DISTINCT player_id) AS \"Players\", to_timestamp(MAX(occurred_at) / 1000.0) AS \"Last seen\" FROM events WHERE kind = 'js_error' AND occurred_at BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 GROUP BY 1 ORDER BY 5 DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Each page reports a distinct error once (at most five per page load). The message is cut to 120 characters with long tokens blanked."
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Online rooms per day, by backend",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', to_timestamp(occurred_at / 1000.0) AT TIME ZONE 'UTC') AS time, (CASE kind WHEN 'room_create' THEN 'created' ELSE 'joined' END) || ' via ' || COALESCE(payload->>'backend', 'unknown') AS metric, COUNT(*) AS value FROM events WHERE kind IN ('room_create', 'room_join') AND occurred_at BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 GROUP BY 1, 2 ORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 37,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Rooms made or joined through the online lobby, by the backend that carried them. LAN rooms are not counted."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  - name: TetriZZ DB
+    uid: tetrizz-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: grafana_ro
+    editable: false
+    jsonData:
+      database: tetrizz
+      sslmode: disable
+      postgresVersion: 1000
+      timescaledb: false
+      maxOpenConns: 5
+      maxIdleConns: 2
+      maxIdleConnsAuto: false
+      connMaxLifetime: 3600
+    secureJsonData:
+      password: $ANALYTICS_DB_PASSWORD

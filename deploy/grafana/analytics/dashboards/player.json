@@ -1,0 +1,509 @@
+{
+  "uid": "tetrizz-player",
+  "title": "TetriZZ / Player",
+  "description": "Everything stored about one anonymous player. Pick a player from the first table or paste an id into the Player box.",
+  "tags": ["tetrizz", "analytics"],
+  "timezone": "utc",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "player",
+        "label": "Player",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/tetrizz-overview",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Live",
+      "type": "link",
+      "url": "/d/tetrizz-live",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Health",
+      "type": "link",
+      "url": "/d/tetrizz-health",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Players",
+      "type": "link",
+      "url": "/d/tetrizz-players",
+      "icon": "dashboard"
+    },
+    {
+      "title": "Player",
+      "type": "link",
+      "url": "/d/tetrizz-player",
+      "icon": "dashboard"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Most active players (selected range)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT player_id AS \"Player\", SUM(games) AS \"Games\", ROUND(SUM(play_ms) / 3600000.0, 1) AS \"Hours\", SUM(lines) AS \"Lines\", MAX(best_score) AS \"Best score\", MAX(day) AS \"Last day\" FROM player_daily WHERE day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date GROUP BY 1 ORDER BY 2 DESC LIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Player"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open player",
+                    "url": "/d/tetrizz-player?var-player=${__value.raw}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Click a player id to open the details below."
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Profile",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT p.id AS \"Player\", to_timestamp(p.first_seen / 1000.0) AS \"First seen\", to_timestamp(p.last_seen / 1000.0) AS \"Last seen\", (SELECT COUNT(*) FROM sessions s WHERE s.player_id = p.id) AS \"Sessions\", (SELECT COUNT(*) FROM game_players g WHERE g.player_id = p.id) AS \"Games\", ROUND(COALESCE((SELECT SUM(g2.duration_ms) FROM game_players gp JOIN games g2 ON g2.id = gp.game_id WHERE gp.player_id = p.id), 0) / 3600000.0, 1) AS \"Hours played\", CASE p.telemetry_opt_out WHEN 1 THEN 'yes' ELSE 'no' END AS \"Opted out\" FROM players p WHERE p.id = ${player:sqlstring}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Sessions and games are the ones still stored (180 days); the daily table below goes further back."
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Games per day",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, games AS \"Games\" FROM player_daily WHERE player_id = ${player:sqlstring} AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars"
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Play time per day (hours)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT day::date::timestamp AS time, play_ms / 3600000.0 AS \"Hours\" FROM player_daily WHERE player_id = ${player:sqlstring} AND day::date BETWEEN (to_timestamp($__unixEpochFrom()) AT TIME ZONE 'UTC')::date AND (to_timestamp($__unixEpochTo()) AT TIME ZONE 'UTC')::date ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars"
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Best by mode",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT g.mode AS \"Mode\", COUNT(*) AS \"Games\", COUNT(*) FILTER (WHERE gp.result = 'win') AS \"Wins\", MAX(gp.score) AS \"Best score\", MAX(gp.lines) AS \"Most lines\", ROUND(AVG(gp.pps)::numeric, 2) AS \"Average PPS\", ROUND(MAX(gp.pps)::numeric, 2) AS \"Best PPS\", ROUND(AVG(gp.apm)::numeric, 1) AS \"Average APM\", to_timestamp(MAX(g.started_at) / 1000.0) AS \"Last played\" FROM game_players gp JOIN games g ON g.id = gp.game_id WHERE gp.player_id = ${player:sqlstring} GROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "From the stored games (180 days). In sprint the score is not the goal; see the time in the changes table."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Personal best score over time",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(at / 1000.0) AS time, detail->>'mode' AS metric, value FROM player_history WHERE player_id = ${player:sqlstring} AND kind = 'personal_best' AND COALESCE(detail->>'mode', '') <> 'sprint' AND at BETWEEN $__unixEpochFrom()::bigint * 1000 AND $__unixEpochTo()::bigint * 1000 ORDER BY at",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Every time the page saved a new record. Sprint records are times, so they are only in the changes table."
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Tracked changes",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(at / 1000.0) AS \"When\", kind AS \"What\", detail->>'mode' AS \"Mode\", value AS \"Value\" FROM player_history WHERE player_id = ${player:sqlstring} ORDER BY at DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "Append-only history of the player: personal bests (a score, or milliseconds for sprint)."
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Devices",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device->>'deviceClass' AS \"Class\", device->>'os' AS \"System\", device->>'osVersion' AS \"Version\", device->>'browser' AS \"Browser\", device->>'browserVersion' AS \"Browser version\", device->>'screen' AS \"Screen\", device->>'displayMode' AS \"Mode\", to_timestamp(last_seen / 1000.0) AS \"Last seen\" FROM player_devices WHERE player_id = ${player:sqlstring} ORDER BY last_seen DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Recent games",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "tetrizz-db"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "tetrizz-db"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_timestamp(g.started_at / 1000.0) AS \"Started\", g.mode AS \"Mode\", gp.result AS \"Result\", gp.score AS \"Score\", gp.lines AS \"Lines\", gp.pieces AS \"Pieces\", ROUND(gp.pps::numeric, 2) AS \"PPS\", ROUND(gp.apm::numeric, 1) AS \"APM\", ROUND(g.duration_ms / 1000.0, 1) AS \"Seconds\", g.bots AS \"Bots\", g.app_version AS \"Version\" FROM game_players gp JOIN games g ON g.id = gp.game_id WHERE gp.player_id = ${player:sqlstring} ORDER BY g.started_at DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}

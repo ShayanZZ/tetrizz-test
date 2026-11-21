@@ -4,9 +4,9 @@
 # backups/ exist, and it leaves data/ and backups/ behind (files owned by the containers' users;
 # remove them with sudo). Run by CI; also fine on a Linux machine.
 #
-#   tests/harness/check_stack.sh lite|postgres|monitoring
+#   tests/harness/check_stack.sh lite|postgres|monitoring|analytics
 set -Eeuo pipefail
-variant=${1:?usage: check_stack.sh lite|postgres|monitoring}
+variant=${1:?usage: check_stack.sh lite|postgres|monitoring|analytics}
 cd "$(dirname "$0")/../.."
 for path in .env data backups; do
   [[ ! -e $path ]] || {
@@ -19,6 +19,7 @@ case $variant in
   lite) files=compose.yaml ;;
   postgres) files=compose.yaml:compose.postgres.yaml ;;
   monitoring) files=compose.yaml:compose.monitoring.yaml ;;
+  analytics) files=compose.yaml:compose.postgres.yaml:compose.monitoring.yaml:compose.analytics.yaml ;;
   *)
     echo "unknown variant: $variant" >&2
     exit 1
@@ -33,6 +34,7 @@ HTTPS_PORT=18443
 GRAFANA_PORT=13000
 POSTGRES_PASSWORD=$pw
 GRAFANA_ADMIN_PASSWORD=$pw
+ANALYTICS_DB_PASSWORD=$pw
 ALERT_HEARTBEAT_URL=http://heartbeat-sink:8080/ping
 ENV
 site=http://127.0.0.1:18080
@@ -102,7 +104,7 @@ bash scripts/restore.sh --yes "$file"
 check_body '"database":"ok"' "the database is not ok after the restore" "$site/readyz"
 bash scripts/healthcheck.sh
 
-if [[ $variant == monitoring ]]; then
+if [[ $variant == monitoring || $variant == analytics ]]; then
   step "Prometheus scrapes the server, the machine and the logging and alerting parts"
   targets=""
   for _ in $(seq 1 40); do
@@ -129,7 +131,9 @@ if [[ $variant == monitoring ]]; then
   g=http://127.0.0.1:13000
   auth="admin:$pw"
   check_body '"database"' "Grafana does not answer" -u "$auth" "$g/api/health"
-  [[ $(curl -fsS -u "$auth" "$g/api/search?type=dash-db" | grep -o '"uid":"tetrizz-' | wc -l) -eq 3 ]] || fail "the three dashboards are not provisioned"
+  dashboards=3
+  if [[ $variant == analytics ]]; then dashboards=5; fi
+  [[ $(curl -fsS -u "$auth" "$g/api/search?type=dash-db" | grep -o '"uid":"tetrizz-' | wc -l) -eq $dashboards ]] || fail "the $dashboards dashboards are not provisioned"
   check_body '"status":"OK"' "Prometheus datasource" -u "$auth" "$g/api/datasources/uid/prometheus/health"
   check_body '"status":"OK"' "Loki datasource" -u "$auth" "$g/api/datasources/uid/loki/health"
 
@@ -167,6 +171,39 @@ if [[ $variant == monitoring ]]; then
   grep -qF 'Watchdog' <<<"$hits" || fail "the heartbeat request is not the Watchdog alert: $hits"
   failed=$(inside http://alertmanager:9093/metrics 2>/dev/null | grep -F 'alertmanager_notifications_failed_total{integration="webhook"' | awk '{n += $NF} END {print n + 0}' || true)
   echo "webhook deliveries failed so far: ${failed:-?} (the first tries fail while the sink starts)"
+fi
+
+if [[ $variant == analytics ]]; then
+  step "Grafana reads PostgreSQL through the read-only role"
+  check_body '"status":"OK"' "the TetriZZ DB datasource does not connect" -u "$auth" "$g/api/datasources/uid/tetrizz-db/health"
+  query() { curl -sS -u "$auth" -H 'Content-Type: application/json' -d "$1" "$g/api/ds/query"; }
+  write='{"queries":[{"refId":"A","datasource":{"uid":"tetrizz-db"},"rawQuery":true,"editorMode":"code","format":"table","rawSql":"DELETE FROM players"}],"from":"now-1h","to":"now"}'
+  res=$(query "$write" || true)
+  grep -qiE 'permission denied|read-only' <<<"$res" || fail "the dashboards' database role was not refused a DELETE: $res"
+  # Every panel of both dashboards, run by Grafana itself (its macros, its role, its connection).
+  python3 - "$g" "$auth" <<'PY' || fail "a business dashboard panel does not run"
+import base64, glob, json, sys, urllib.request
+base, auth = sys.argv[1], sys.argv[2]
+head = {"Content-Type": "application/json", "Authorization": "Basic " + base64.b64encode(auth.encode()).decode()}
+bad = ran = 0
+for path in sorted(glob.glob("deploy/grafana/analytics/dashboards/*.json")):
+    for panel in json.load(open(path))["panels"]:
+        for t in panel["targets"]:
+            sql = t["rawSql"].replace("${player:sqlstring}", "'nobody'")
+            body = {"queries": [{**t, "rawSql": sql, "datasource": {"uid": "tetrizz-db"}}], "from": "now-30d", "to": "now"}
+            req = urllib.request.Request(base + "/api/ds/query", json.dumps(body).encode(), head)
+            try:
+                res = json.load(urllib.request.urlopen(req))
+            except urllib.error.HTTPError as e:
+                res = json.load(e)
+            err = res.get("results", {}).get(t["refId"], {}).get("error") or res.get("message")
+            ran += 1
+            if err:
+                bad += 1
+                print(f"FAIL {path} / {panel['title']}: {err}")
+print(f"{ran} queries run through Grafana, {bad} failed")
+sys.exit(1 if bad or ran == 0 else 0)
+PY
 fi
 
 step "all good ($variant)"

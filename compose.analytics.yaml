@@ -1,0 +1,53 @@
+# Business dashboards in Grafana, read straight from PostgreSQL: players, games, devices, performance,
+# errors and one page per player. Needs both of the others:
+#   COMPOSE_FILE=compose.yaml:compose.postgres.yaml:compose.monitoring.yaml:compose.analytics.yaml
+# ANALYTICS_DB_PASSWORD must be set in .env, with letters and digits only (openssl rand -hex 24).
+# Grafana reads the database as a role that can only SELECT (deploy/postgres/init-analytics.sh makes it);
+# it cannot change or delete anything, and a query that runs longer than 30 seconds is stopped.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # One-shot: makes the read-only role and gives it the tables. It waits for the server, which creates the
+  # tables, and runs again at every start so a table added by a later version is readable too.
+  init-analytics-db:
+    image: postgres:18.7-alpine3.24
+    user: "70:70"
+    entrypoint: ["sh", "/init/init-analytics.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: tetrizz
+      PGDATABASE: tetrizz
+      PGPASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
+      ANALYTICS_DB_PASSWORD: "${ANALYTICS_DB_PASSWORD:?set ANALYTICS_DB_PASSWORD in .env, letters and digits only (openssl rand -hex 24)}"
+    volumes:
+      - ./deploy/postgres:/init:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+    logging: *logging
+
+  # The two files below replace the empty placeholders of the same name in deploy/grafana/provisioning
+  # (a file can be mounted over a file, but not into a folder that is mounted read-only).
+  grafana:
+    depends_on:
+      init-analytics-db:
+        condition: service_completed_successfully
+    environment:
+      ANALYTICS_DB_PASSWORD: "${ANALYTICS_DB_PASSWORD:?set ANALYTICS_DB_PASSWORD in .env, letters and digits only (openssl rand -hex 24)}"
+    volumes:
+      - ./deploy/grafana/analytics/datasources.yml:/etc/grafana/provisioning/datasources/analytics.yml:ro
+      - ./deploy/grafana/analytics/dashboards.yml:/etc/grafana/provisioning/dashboards/analytics.yml:ro
+      - ./deploy/grafana/analytics/dashboards:/var/lib/grafana-dashboards-analytics:ro

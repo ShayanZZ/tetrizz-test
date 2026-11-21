@@ -9,6 +9,7 @@ compose files always run. Exit code 0 when nothing that ran failed.
 
 --tools adds DIR to the search path (the binaries do not have to be installed system-wide).
 """
+import json
 import os
 import re
 import shutil
@@ -61,8 +62,9 @@ COMBOS = {
     "postgres": ["compose.yaml", "compose.postgres.yaml"],
     "monitoring": ["compose.yaml", "compose.monitoring.yaml"],
     "full": ["compose.yaml", "compose.postgres.yaml", "compose.monitoring.yaml"],
+    "analytics": ["compose.yaml", "compose.postgres.yaml", "compose.monitoring.yaml", "compose.analytics.yaml"],
 }
-ENV = {"POSTGRES_PASSWORD": "abc123", "GRAFANA_ADMIN_PASSWORD": "pw"}
+ENV = {"POSTGRES_PASSWORD": "abc123", "GRAFANA_ADMIN_PASSWORD": "pw", "ANALYTICS_DB_PASSWORD": "abc456"}
 
 print("compose files")
 rendered: dict[str, dict] = {}
@@ -88,16 +90,16 @@ for name, files in COMBOS.items():
                 merged["services"].setdefault(k, {}).update(v)
         rendered[name] = merged
 
-for name, who in (("postgres", "POSTGRES_PASSWORD"), ("monitoring", "GRAFANA_ADMIN_PASSWORD")):
+for name, who in (("postgres", "POSTGRES_PASSWORD"), ("monitoring", "GRAFANA_ADMIN_PASSWORD"), ("analytics", "ANALYTICS_DB_PASSWORD")):
     if compose:
-        r = run(compose + [a for f in COMBOS[name] for a in ("-f", f)] + ["config", "-q"], env={"COMPOSE_FILE": ""})
+        r = run(compose + [a for f in COMBOS[name] for a in ("-f", f)] + ["config", "-q"], env={"COMPOSE_FILE": "", **{k: v for k, v in ENV.items() if k != who}})
         if r.returncode != 0 and who in r.stderr:
             ok(f"{name}: refuses to start without {who}")
         else:
             bad(f"{name}: a missing {who} must stop the stack")
 
 print("structure")
-full = rendered.get("full", {}).get("services", {})
+full = (rendered.get("analytics") or rendered.get("full", {})).get("services", {})
 for svc, spec in full.items():
     image = spec.get("image", "")
     local = image.endswith(":local")
@@ -291,6 +293,28 @@ def alloy(binary: str) -> None:
 tool("loki -verify-config", which("loki", "loki-linux-amd64"), loki)
 tool("alloy validate", which("alloy", "alloy-linux-amd64"), alloy)
 
+print("analytics (business dashboards)")
+overlay = yaml.safe_load((ROOT / "compose.analytics.yaml").read_text())["services"]["grafana"]
+mounts = {m.split(":")[1]: m.split(":")[0] for m in overlay["volumes"]}
+prov = ROOT / "deploy/grafana/provisioning"
+for target, source in mounts.items():
+    if target.startswith("/etc/grafana/provisioning/"):
+        # Mounted over a placeholder: a mount point cannot be made inside the read-only provisioning folder.
+        placeholder = prov / target.removeprefix("/etc/grafana/provisioning/")
+        ok(f"{target}: placeholder exists") if placeholder.is_file() else bad(f"{target}: no placeholder file at {placeholder.relative_to(ROOT)}")
+        ok(f"{source}: exists") if (ROOT / source).is_file() else bad(f"{source}: missing")
+ds = yaml.safe_load((ROOT / "deploy/grafana/analytics/datasources.yml").read_text())["datasources"][0]
+(ok if ds["uid"] == "tetrizz-db" and ds["secureJsonData"]["password"] == "$ANALYTICS_DB_PASSWORD" else bad)("datasource: uid tetrizz-db, password from the environment, none in the file")
+provider = yaml.safe_load((ROOT / "deploy/grafana/analytics/dashboards.yml").read_text())["providers"][0]
+(ok if provider["options"]["path"] in mounts else bad)("dashboard provider reads the folder the overlay mounts")
+seen: dict[str, str] = {}
+for f in sorted((ROOT / "deploy/grafana").glob("**/dashboards/*.json")):
+    d = json.loads(f.read_text())
+    if d["uid"] in seen:
+        bad(f"dashboard uid {d['uid']} used twice")
+    seen[d["uid"]] = f.name
+ok(f"{len(seen)} dashboards, unique uids")
+
 print("shell scripts")
 
 
@@ -298,14 +322,13 @@ def shellcheck(binary: str) -> None:
     scripts = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "scripts").glob("*.sh")) + ["tests/harness/check_stack.sh"]
     r = run([binary, "-x", "-s", "bash", *scripts])
     ok(f"shellcheck: {len(scripts)} scripts clean") if r.returncode == 0 else bad(f"shellcheck:\n{r.stdout}")
-    r = run([binary, "-s", "sh", "deploy/alertmanager/entrypoint.sh"])
-    ok("shellcheck: alertmanager entrypoint (POSIX sh) clean") if r.returncode == 0 else bad(f"shellcheck (entrypoint):\n{r.stdout}")
+    r = run([binary, "-s", "sh", "deploy/alertmanager/entrypoint.sh", "deploy/postgres/init-analytics.sh"])
+    ok("shellcheck: alertmanager entrypoint and analytics role script (POSIX sh) clean") if r.returncode == 0 else bad(f"shellcheck (POSIX sh scripts):\n{r.stdout}")
 
 
 tool("shellcheck", which("shellcheck"), shellcheck)
 
 print("static hosts")
-import json
 
 package = json.loads((ROOT / "package.json").read_text())
 vite_out = re.search(r'const outDir = single \? "dist-single" : "(\w+)"', (ROOT / "apps/web/vite.config.ts").read_text())

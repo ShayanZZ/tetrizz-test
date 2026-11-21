@@ -29,6 +29,7 @@ jobs:
           --health-retries 12
     env:
       TEST_POSTGRES_URL: postgres://tetrizz:tetrizz@127.0.0.1:5432/tetrizz_test
+      REQUIRE_ANALYTICS_TESTS: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -143,7 +144,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [lite, postgres, monitoring]
+        variant: [lite, postgres, monitoring, analytics]
     steps:
       - uses: actions/checkout@v7
       # Through bash: a checkout from a zip or Windows can lose the executable bit.

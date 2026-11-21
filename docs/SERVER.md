@@ -242,6 +242,5 @@ when SQLite is chosen, so a server with `DB_DRIVER=off` prints no experimental-f
 
 ## Not here yet
 
-The room list endpoint, the deployment guides per host and delivery of the Prometheus alerts (PLAN.md sections 11
-to 13; the Docker files, backup scripts and monitoring stack are in `docs/DOCKER.md`). Reconnects (seats resumed)
+The room list endpoint (waiting for an owner decision, see `docs/PROGRESS.md`; the Docker files, backup scripts, monitoring stack and the business dashboards are in `docs/DOCKER.md`). Reconnects (seats resumed)
 are not counted in `/metrics` yet. Rooms and players are in memory only.
